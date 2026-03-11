@@ -1,0 +1,29 @@
+{
+  "name": "overlord-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for AI-controlled Proxmox VE infrastructure management",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "npx tsc --watch"
+  },
+  "keywords": [
+    "mcp",
+    "proxmox",
+    "virtualization",
+    "ai-infrastructure"
+  ],
+  "author": "mikeshoss",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "express": "^4.21.2",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.13.10",
+    "typescript": "^5.8.2"
+  }
+}

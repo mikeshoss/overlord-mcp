@@ -1,0 +1,15 @@
+services:
+  overlord-mcp:
+    build: .
+    container_name: overlord-mcp
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    environment:
+      - TRANSPORT=http
+      - PORT=3002
+      - PROXMOX_HOST=https://192.168.1.100:8006
+      - PROXMOX_TOKEN_ID=automation@pve!overlord
+      - PROXMOX_TOKEN_SECRET=your-token-uuid-here
+      - PROXMOX_DEFAULT_NODE=pve
+      - PROXMOX_DEFAULT_STORAGE=local-lvm
