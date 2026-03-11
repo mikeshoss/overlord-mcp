@@ -168,8 +168,8 @@ export class ProxmoxClient {
     return this.request<T>("PUT", path, { data });
   }
 
-  async delete<T>(path: string): Promise<T> {
-    return this.request<T>("DELETE", path);
+  async delete<T>(path: string, params?: Record<string, string>): Promise<T> {
+    return this.request<T>("DELETE", path, { params });
   }
 
   async getVersion(): Promise<{ version: string; release: string }> {

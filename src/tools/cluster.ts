@@ -5,6 +5,7 @@ import {
   ClusterStatusSchema,
   NodeStatusSchema,
   ClusterResourcesSchema,
+  VmStatusSchema,
 } from "../schemas/tools.js";
 import { CHARACTER_LIMIT } from "../constants.js";
 
@@ -87,6 +88,36 @@ export function registerClusterTools(
       const data = await client.get<ClusterResource[]>("cluster/resources", {
         type,
       });
+      const text = JSON.stringify(data, null, 2).slice(0, CHARACTER_LIMIT);
+      return { content: [{ type: "text" as const, text }] };
+    },
+  );
+
+  // ── overlord_vm_status ──────────────────────────────────────────────────
+  server.registerTool(
+    "overlord_vm_status",
+    {
+      description:
+        "Get the current status of a specific VM — running, stopped, paused, etc. Also returns " +
+        "basic resource usage (CPU, memory) and uptime. Use this to check if a VM is ready before " +
+        "running commands inside it, or to verify a start/stop operation succeeded.\n\n" +
+        "This is lighter than overlord_cluster_resources when you already know the vmid and node.\n\n" +
+        "Args:\n" +
+        "  - node (string, required): Proxmox node name\n" +
+        "  - vmid (number, required): VM ID to check\n\n" +
+        "Returns: VM status (running/stopped), CPU, memory, uptime, PID, name, qmpstatus.\n\n" +
+        "Example: { node: 'pve', vmid: 100 }",
+      inputSchema: VmStatusSchema,
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
+    },
+    async ({ node, vmid }) => {
+      const data = await client.get<Record<string, unknown>>(
+        `nodes/${encodeURIComponent(node)}/qemu/${vmid}/status/current`,
+      );
       const text = JSON.stringify(data, null, 2).slice(0, CHARACTER_LIMIT);
       return { content: [{ type: "text" as const, text }] };
     },

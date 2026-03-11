@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { ProxmoxClient } from "../services/proxmox-client.js";
 import type { GuestExecResponse, GuestExecStatus, GuestExecResult } from "../types.js";
-import { GuestExecSchema, GuestFileReadSchema } from "../schemas/tools.js";
+import { GuestExecSchema, GuestFileReadSchema, GuestPingSchema } from "../schemas/tools.js";
 import { GUEST_EXEC_TIMEOUT, TASK_POLL_INTERVAL, CHARACTER_LIMIT } from "../constants.js";
 
 function sleep(ms: number): Promise<void> {
@@ -151,6 +151,73 @@ export function registerGuestExecTools(
         2,
       );
       return { content: [{ type: "text" as const, text }] };
+    },
+  );
+
+  // ── overlord_guest_ping ─────────────────────────────────────────────────
+  server.registerTool(
+    "overlord_guest_ping",
+    {
+      description:
+        "Wait for the QEMU Guest Agent inside a VM to become responsive. Use this after starting " +
+        "a VM and before running overlord_guest_exec — it polls until the guest agent answers or " +
+        "times out.\n\n" +
+        "The typical workflow is: overlord_vm_start → overlord_guest_ping → overlord_guest_exec.\n\n" +
+        "Args:\n" +
+        "  - node (string, required): Proxmox node name\n" +
+        "  - vmid (number, required): VM ID to ping\n" +
+        "  - timeout_seconds (number, optional, default 60): Max seconds to wait for the guest agent\n\n" +
+        "Returns: Success/failure status and time elapsed.\n\n" +
+        "Example: { node: 'pve', vmid: 100 }\n" +
+        "Example: { node: 'pve', vmid: 100, timeout_seconds: 120 }",
+      inputSchema: GuestPingSchema,
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
+    },
+    async ({ node, vmid, timeout_seconds }) => {
+      const timeoutMs = (timeout_seconds ?? 60) * 1000;
+      const deadline = Date.now() + timeoutMs;
+      let attempts = 0;
+
+      while (Date.now() < deadline) {
+        attempts++;
+        try {
+          await client.post<Record<string, unknown>>(
+            `nodes/${encodeURIComponent(node)}/qemu/${vmid}/agent/ping`,
+          );
+          const text = JSON.stringify(
+            {
+              vmid,
+              node,
+              agent_ready: true,
+              attempts,
+              elapsed_ms: timeoutMs - (deadline - Date.now()),
+            },
+            null,
+            2,
+          );
+          return { content: [{ type: "text" as const, text }] };
+        } catch {
+          // Agent not ready yet — wait and retry
+          await sleep(TASK_POLL_INTERVAL);
+        }
+      }
+
+      const text = JSON.stringify(
+        {
+          vmid,
+          node,
+          agent_ready: false,
+          attempts,
+          error: `Guest agent did not respond within ${timeout_seconds ?? 60}s. Ensure qemu-guest-agent is installed and the 'agent' option is enabled in VM config.`,
+        },
+        null,
+        2,
+      );
+      return { content: [{ type: "text" as const, text }], isError: true };
     },
   );
 }

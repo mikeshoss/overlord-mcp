@@ -126,6 +126,13 @@ export const TemplateCloneSchema = z.object({
   start_after_clone: z.boolean().default(false).optional().describe("Start the VM after cloning (default: false)"),
 }).strict();
 
+// ── VM Status ───────────────────────────────────────────────────────────────
+
+export const VmStatusSchema = z.object({
+  node: node,
+  vmid: vmid.describe("VM ID to check status of"),
+}).strict();
+
 // ── Guest Execution ─────────────────────────────────────────────────────────
 
 export const GuestExecSchema = z.object({
@@ -139,4 +146,10 @@ export const GuestFileReadSchema = z.object({
   node: node,
   vmid: vmid.describe("VM ID to read file from"),
   file_path: z.string().min(1).describe("Absolute file path inside the VM (e.g. '/etc/os-release')"),
+}).strict();
+
+export const GuestPingSchema = z.object({
+  node: node,
+  vmid: vmid.describe("VM ID to ping guest agent on"),
+  timeout_seconds: z.number().int().positive().default(60).optional().describe("Max seconds to wait for guest agent (default: 60)"),
 }).strict();

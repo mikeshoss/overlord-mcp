@@ -262,7 +262,8 @@ export function registerVmLifecycleTools(
       }
 
       const upid = await client.delete<string>(
-        `nodes/${encodeURIComponent(node)}/qemu/${vmid}?purge=1&destroy-unreferenced-disks=1`,
+        `nodes/${encodeURIComponent(node)}/qemu/${vmid}`,
+        { purge: "1", "destroy-unreferenced-disks": "1" },
       );
       const result = await waitForTask(client, node, upid);
       const text = JSON.stringify(
