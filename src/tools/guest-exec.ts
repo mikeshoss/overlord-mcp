@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { ProxmoxClient } from "../services/proxmox-client.js";
 import type { GuestExecResponse, GuestExecStatus, GuestExecResult } from "../types.js";
-import { GuestExecSchema, GuestFileReadSchema, GuestPingSchema } from "../schemas/tools.js";
+import { GuestExecSchema, GuestFileReadSchema, GuestFileWriteSchema, GuestPingSchema } from "../schemas/tools.js";
 import { GUEST_EXEC_TIMEOUT, TASK_POLL_INTERVAL, CHARACTER_LIMIT } from "../constants.js";
 
 function sleep(ms: number): Promise<void> {
@@ -223,6 +223,58 @@ export function registerGuestExecTools(
         2,
       );
       return { content: [{ type: "text" as const, text }], isError: true };
+    },
+  );
+
+  // ── overlord_guest_file_write ─────────────────────────────────────────────
+  server.registerTool(
+    "overlord_guest_file_write",
+    {
+      description:
+        "Write a file inside a VM via the QEMU Guest Agent. The guest agent must be installed " +
+        "and the 'agent' option enabled in VM config.\n\n" +
+        "Use this to deploy configuration files, SSH keys, scripts, or any text content " +
+        "directly into a VM without needing shell commands.\n\n" +
+        "NOTE: This uses a three-step process via the Proxmox guest agent API:\n" +
+        "  1. Open a file handle inside the VM\n" +
+        "  2. Write content to the handle\n" +
+        "  3. Close the handle\n\n" +
+        "Args:\n" +
+        "  - node (string, required): Proxmox node name\n" +
+        "  - vmid (number, required): VM ID to write file to\n" +
+        "  - file_path (string, required): Absolute path inside the VM (e.g. '/etc/myconfig.conf')\n" +
+        "  - content (string, required): File content to write\n\n" +
+        "Returns: Confirmation of file write.\n\n" +
+        "Example: { node: 'pve', vmid: 100, file_path: '/root/.ssh/authorized_keys', content: 'ssh-ed25519 AAAA...' }\n" +
+        "Example: { node: 'pve', vmid: 100, file_path: '/etc/hostname', content: 'my-new-vm' }",
+      inputSchema: GuestFileWriteSchema,
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        openWorldHint: false,
+      },
+    },
+    async ({ node, vmid, file_path, content }) => {
+      // Proxmox guest-agent file-write uses base64 encoding
+      const encoded = Buffer.from(content, "utf-8").toString("base64");
+
+      await client.post(
+        `nodes/${encodeURIComponent(node)}/qemu/${vmid}/agent/file-write`,
+        { file: file_path, content: encoded },
+      );
+
+      const text = JSON.stringify(
+        {
+          vmid,
+          node,
+          file_path,
+          bytes_written: content.length,
+          success: true,
+        },
+        null,
+        2,
+      );
+      return { content: [{ type: "text" as const, text }] };
     },
   );
 }

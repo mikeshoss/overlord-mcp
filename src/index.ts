@@ -13,6 +13,10 @@ import { registerSnapshotTools } from "./tools/snapshots.js";
 import { registerTemplateTools } from "./tools/templates.js";
 import { registerGuestExecTools } from "./tools/guest-exec.js";
 import { registerProvisionTools } from "./tools/provision.js";
+import { registerNetworkTools } from "./tools/networking.js";
+import { registerMigrationTools } from "./tools/migration.js";
+import { registerBackupTools } from "./tools/backup.js";
+import { registerStorageTools } from "./tools/storage.js";
 
 // Proxmox uses self-signed certificates by default — disable TLS verification
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
@@ -32,6 +36,10 @@ function createServer(): McpServer {
   registerTemplateTools(server, client);
   registerGuestExecTools(server, client);
   registerProvisionTools(server, client);
+  registerNetworkTools(server, client);
+  registerMigrationTools(server, client);
+  registerBackupTools(server, client);
+  registerStorageTools(server, client);
 
   return server;
 }

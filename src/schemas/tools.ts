@@ -155,6 +155,127 @@ export const GuestPingSchema = z.object({
   timeout_seconds: z.number().int().positive().default(60).optional().describe("Max seconds to wait for guest agent (default: 60)"),
 }).strict();
 
+// ── Networking ──────────────────────────────────────────────────────────────
+
+export const NetworkListSchema = z.object({
+  node: node,
+  type: z.enum(["bridge", "bond", "vlan", "eth", "any"]).default("any").optional()
+    .describe("Filter by interface type (default: 'any')"),
+}).strict();
+
+export const NetworkGetSchema = z.object({
+  node: node,
+  iface: z.string().min(1).describe("Interface name (e.g. 'vmbr0', 'eno1', 'bond0')"),
+}).strict();
+
+export const NetworkCreateSchema = z.object({
+  node: node,
+  iface: z.string().min(1).describe("Interface name (e.g. 'vmbr1', 'bond0', 'eno1.100')"),
+  type: z.enum(["bridge", "bond", "vlan", "OVSBridge", "OVSBond", "OVSPort", "OVSIntPort"])
+    .describe("Interface type"),
+  address: z.string().optional().describe("IPv4 address (e.g. '10.0.0.1')"),
+  netmask: z.string().optional().describe("Subnet mask (e.g. '255.255.255.0')"),
+  cidr: z.string().optional().describe("CIDR notation (e.g. '10.0.0.1/24')"),
+  gateway: z.string().optional().describe("Default gateway"),
+  bridge_ports: z.string().optional().describe("Ports for bridge (e.g. 'eno1')"),
+  bridge_vlan_aware: z.boolean().optional().describe("Enable VLAN-aware bridge"),
+  bond_slaves: z.string().optional().describe("Slave interfaces (e.g. 'eno1 eno2')"),
+  bond_mode: z.string().optional().describe("Bond mode (e.g. 'balance-rr', '802.3ad')"),
+  vlan_raw_device: z.string().optional().describe("Parent interface for VLAN"),
+  vlan_id: z.number().int().optional().describe("VLAN tag number"),
+  comments: z.string().optional().describe("Description"),
+  autostart: z.boolean().optional().describe("Bring up on boot"),
+}).strict();
+
+export const NetworkUpdateSchema = z.object({
+  node: node,
+  iface: z.string().min(1).describe("Interface name to update"),
+  type: z.enum(["bridge", "bond", "vlan", "OVSBridge", "OVSBond", "OVSPort", "OVSIntPort"])
+    .describe("Interface type (must match existing)"),
+  config: z.record(z.union([z.string(), z.number(), z.boolean()])).describe(
+    "Key-value config to update (address, netmask, cidr, gateway, bridge_ports, etc.)"
+  ),
+}).strict();
+
+export const NetworkDeleteSchema = z.object({
+  node: node,
+  iface: z.string().min(1).describe("Interface name to delete"),
+}).strict();
+
+// ── Migration ───────────────────────────────────────────────────────────────
+
+export const VmMigrateSchema = z.object({
+  node: node.describe("Source node where the VM currently lives"),
+  vmid: vmid.describe("VM ID to migrate"),
+  target: z.string().min(1).describe("Destination node name"),
+  online: z.boolean().default(true).optional().describe("Live migration (true) or offline (false). Default: true"),
+  with_local_disks: z.boolean().default(true).optional().describe("Migrate local disks. Required for VMs on local storage. Default: true"),
+  target_storage: z.string().optional().describe("Move disks to this storage on the target node"),
+}).strict();
+
+// ── Backup & Restore ────────────────────────────────────────────────────────
+
+export const BackupListSchema = z.object({
+  node: node,
+  storage: z.string().min(1).describe("Storage ID where backups are stored (e.g. 'local', 'nfs-backup')"),
+  vmid: vmid.optional().describe("Filter backups by VM ID"),
+}).strict();
+
+export const BackupCreateSchema = z.object({
+  node: node,
+  vmid: vmid.describe("VM ID to backup"),
+  storage: z.string().min(1).describe("Target storage for the backup"),
+  mode: z.enum(["snapshot", "suspend", "stop"]).default("snapshot").optional()
+    .describe("Backup mode — snapshot (default, runs while VM is up), suspend (pauses VM), stop (stops VM)"),
+  compress: z.enum(["zstd", "lzo", "gzip", "none"]).default("zstd").optional()
+    .describe("Compression algorithm (default: zstd)"),
+  notes: z.string().optional().describe("Descriptive notes for this backup"),
+}).strict();
+
+export const BackupRestoreSchema = z.object({
+  node: node.describe("Node to restore onto"),
+  vmid: vmid.describe("VM ID for the restored VM"),
+  archive: z.string().min(1).describe("Backup volume ID (from overlord_backup_list)"),
+  storage: z.string().optional().describe("Target storage for restored disks"),
+  force: z.boolean().default(false).optional().describe("Overwrite existing VM with same VMID (default: false)"),
+  start_after_restore: z.boolean().default(false).optional().describe("Start VM after restore (default: false)"),
+}).strict();
+
+export const BackupDeleteSchema = z.object({
+  node: node,
+  storage: z.string().min(1).describe("Storage ID"),
+  volume: z.string().min(1).describe("Backup volume ID to delete"),
+}).strict();
+
+// ── Storage ─────────────────────────────────────────────────────────────────
+
+export const StorageListSchema = z.object({
+  node: z.string().optional().describe("Filter to storage on a specific node (includes usage stats)"),
+  content: z.string().optional().describe("Filter by content type — 'images', 'backup', 'iso', 'rootdir', 'vztmpl'"),
+  enabled_only: z.boolean().default(true).optional().describe("Only show enabled storage (default: true)"),
+}).strict();
+
+export const StorageStatusSchema = z.object({
+  node: node,
+  storage: z.string().min(1).describe("Storage ID (e.g. 'local-lvm', 'ceph-pool')"),
+}).strict();
+
+export const StorageContentSchema = z.object({
+  node: node,
+  storage: z.string().min(1).describe("Storage ID"),
+  content: z.string().optional().describe("Filter by content type"),
+  vmid: vmid.optional().describe("Filter by VM ID"),
+}).strict();
+
+// ── Guest File Write ────────────────────────────────────────────────────────
+
+export const GuestFileWriteSchema = z.object({
+  node: node,
+  vmid: vmid.describe("VM ID to write file to"),
+  file_path: z.string().min(1).describe("Absolute file path inside the VM (e.g. '/etc/myconfig.conf')"),
+  content: z.string().describe("File content to write"),
+}).strict();
+
 // ── Provisioning ────────────────────────────────────────────────────────────
 
 export const RecipeListSchema = z.object({
