@@ -157,7 +157,9 @@ export const GuestPingSchema = z.object({
 
 // ── Provisioning ────────────────────────────────────────────────────────────
 
-export const RecipeListSchema = z.object({}).strict();
+export const RecipeListSchema = z.object({
+  platform: z.enum(["debian", "rhel", "windows"]).optional().describe("Filter recipes by platform. Omit to show all."),
+}).strict();
 
 export const ProvisionSchema = z.object({
   node: node,
