@@ -19,6 +19,9 @@ export function registerMigrationTools(
         "offline migration.\n\n" +
         "Live migration moves a running VM with minimal downtime — the VM stays up during " +
         "the transfer. Offline migration requires the VM to be stopped first.\n\n" +
+        "DISCOVERY: Use overlord_cluster_resources to find the VM's current node (source). " +
+        "Use overlord_smart_placement to find the best target node. " +
+        "Use overlord_node_metrics to check if a node is overloaded (reason to migrate).\n\n" +
         "Use cases:\n" +
         "  - Load balancing: move VMs off an overloaded node\n" +
         "  - Maintenance: evacuate a node before updates/reboots\n" +

@@ -167,11 +167,12 @@ export function registerProvisionTools(
       description:
         "Provision a running VM by applying one or more recipes. Recipes are pre-built scripts " +
         "that install software (Docker, Node.js, Python, etc.) and configure the VM.\n\n" +
+        "PREREQUISITES: The VM MUST be running AND the qemu-guest-agent MUST be installed and responsive. " +
+        "Call overlord_guest_ping first — if it fails, provisioning CANNOT proceed. " +
+        "If you need the full clone→start→provision workflow in one call, use overlord_clone_and_provision instead.\n\n" +
         "PLATFORM AUTO-DETECTION: The tool automatically detects the VM's OS (Ubuntu/Debian, " +
         "Fedora/RHEL, or Windows) and runs the correct script variant. You don't need to specify " +
         "the platform.\n\n" +
-        "The VM MUST be running and the guest agent MUST be responsive before calling this tool. " +
-        "Use overlord_guest_ping first to verify.\n\n" +
         "Recipes are applied in order. If a recipe fails, subsequent recipes are skipped. " +
         "Some recipes have dependencies — e.g. 'reaper_mcp' requires 'docker' first. " +
         "If a recipe doesn't support the detected platform, it fails with a clear message.\n\n" +

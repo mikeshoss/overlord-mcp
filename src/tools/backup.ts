@@ -22,9 +22,11 @@ export function registerBackupTools(
       description:
         "List all backups stored on a specific storage. Use this to find existing backups " +
         "before restoring, or to audit backup coverage.\n\n" +
+        "DISCOVERY: Use overlord_storage_list to find storage pool names. The returned 'volid' values are " +
+        "the 'archive' parameter needed by overlord_backup_restore and the 'volume' parameter for overlord_backup_delete.\n\n" +
         "Args:\n" +
-        "  - node (string, required): Proxmox node name\n" +
-        "  - storage (string, required): Storage ID where backups are kept (e.g. 'local', 'nfs-backup')\n" +
+        "  - node (string, required): Proxmox node name (from overlord_cluster_status)\n" +
+        "  - storage (string, required): Storage ID where backups are kept (from overlord_storage_list, e.g. 'local', 'nfs-backup')\n" +
         "  - vmid (number, optional): Filter by VM ID — show only backups of a specific VM\n\n" +
         "Returns: List of backup volumes with size, date, and VM ID.\n\n" +
         "Example: { node: 'pve', storage: 'local' }\n" +
@@ -73,10 +75,13 @@ export function registerBackupTools(
       description:
         "Create a backup of a VM. Backups are stored on Proxmox storage and survive VM deletion " +
         "(unlike snapshots). Use for disaster recovery, before risky changes, or scheduled protection.\n\n" +
-        "Backup modes:\n" +
-        "  - snapshot (default): Backup while VM runs using LVM/ZFS snapshot — minimal impact\n" +
-        "  - suspend: Pause VM during backup — consistent state but brief downtime\n" +
-        "  - stop: Stop VM for backup — most consistent but VM goes offline\n\n" +
+        "DISCOVERY: Use overlord_storage_list to find storage pool names for the 'storage' parameter. " +
+        "Use overlord_cluster_resources to find VMIDs.\n\n" +
+        "Backup modes (listed from least to most disruptive):\n" +
+        "  - snapshot (default): VM keeps running. Uses storage-level snapshots (LVM/ZFS). " +
+        "Fastest, minimal impact, but filesystem inside VM may not be 100% consistent.\n" +
+        "  - suspend: Pauses VM briefly during backup. More consistent than snapshot but causes brief downtime.\n" +
+        "  - stop: Stops VM entirely during backup. Most consistent state, but VM goes fully offline.\n\n" +
         "Compression:\n" +
         "  - zstd (default): Fast with good compression ratio\n" +
         "  - lzo: Faster but larger files\n" +
@@ -148,12 +153,14 @@ export function registerBackupTools(
     {
       description:
         "Restore a VM from a backup. This creates (or overwrites) a VM from a previously stored backup.\n\n" +
+        "DISCOVERY: Call overlord_backup_list first to find the 'archive' value (the volid field from the backup list).\n\n" +
         "WARNING: If the target VMID already exists and force=true, the existing VM will be " +
         "DESTROYED and replaced. This is irreversible.\n\n" +
+        "The restored VM will be in a stopped state. Use start_after_restore=true or call overlord_vm_start afterward.\n\n" +
         "Args:\n" +
         "  - node (string, required): Proxmox node to restore onto\n" +
         "  - vmid (number, required): VM ID for the restored VM\n" +
-        "  - archive (string, required): Backup volume ID (from overlord_backup_list, e.g. 'local:backup/vzdump-qemu-201-2024_01_15-12_00_00.vma.zst')\n" +
+        "  - archive (string, required): Backup volume ID (from overlord_backup_list volid field, e.g. 'local:backup/vzdump-qemu-201-2024_01_15-12_00_00.vma.zst')\n" +
         "  - storage (string, optional): Target storage for restored disks (defaults to original)\n" +
         "  - force (boolean, optional, default false): Overwrite existing VM with same VMID\n" +
         "  - start_after_restore (boolean, optional, default false): Start VM after restore completes\n\n" +

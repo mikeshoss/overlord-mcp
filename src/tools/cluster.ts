@@ -19,9 +19,11 @@ export function registerClusterTools(
     {
       description:
         "Get Proxmox cluster status including cluster name, quorum status, and all nodes with their online/offline state. " +
-        "Use this to verify cluster health and node availability before provisioning VMs.\n\n" +
+        "Use this to verify cluster health and discover node names.\n\n" +
+        "DISCOVERY: This returns node names needed by most other tools (e.g. overlord_vm_create, " +
+        "overlord_template_clone, overlord_node_status). Call this first if you don't know the node names.\n\n" +
         "Args: None\n\n" +
-        "Returns: Cluster name, quorum status, and list of nodes with online/offline state.\n\n" +
+        "Returns: Cluster name, quorum status, and list of nodes with name, online/offline state, IP address.\n\n" +
         "Example: Call with no arguments to get a cluster overview.",
       inputSchema: ClusterStatusSchema,
       annotations: {
@@ -70,12 +72,18 @@ export function registerClusterTools(
     {
       description:
         "Get an overview of all resources across the Proxmox cluster. This is the 'give me everything' tool — " +
-        "agents should call this first to understand what VMs, nodes, and storage exist.\n\n" +
+        "call this first to discover node names, VM IDs, and storage pools.\n\n" +
+        "DISCOVERY: This is the primary way to find:\n" +
+        "  - Node names (needed by nearly every other tool)\n" +
+        "  - VM IDs and which node they're on\n" +
+        "  - Which VMs are templates (template=1) for cloning\n" +
+        "  - Storage pools and their capacity\n\n" +
         "Args:\n" +
         "  - resource_type (enum: 'vm' | 'node' | 'storage', optional, default 'vm'): Type of resources to list\n\n" +
         "Returns: List of resources with vmid, name, node, status, CPU/memory/disk usage, template flag.\n\n" +
-        "Example: { resource_type: 'vm' } — lists all VMs across the cluster\n" +
-        "Example: {} — defaults to listing VMs",
+        "Example: { resource_type: 'vm' } — lists all VMs across the cluster (includes templates)\n" +
+        "Example: { resource_type: 'storage' } — lists all storage pools with capacity\n" +
+        "Example: { resource_type: 'node' } — lists all nodes with resource usage",
       inputSchema: ClusterResourcesSchema,
       annotations: {
         readOnlyHint: true,

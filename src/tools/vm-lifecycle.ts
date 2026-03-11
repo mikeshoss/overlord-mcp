@@ -22,16 +22,20 @@ export function registerVmLifecycleTools(
       description:
         "Create a new empty VM on a Proxmox node. This creates a blank VM — for creating VMs from templates, " +
         "use overlord_template_clone instead.\n\n" +
+        "DISCOVERY: Call overlord_cluster_resources with resource_type='node' to find node names. " +
+        "Call overlord_storage_list to find storage pool names for the scsi0 parameter. " +
+        "Use overlord_smart_placement to auto-recommend the best node. " +
+        "Use overlord_network_list to find available bridge names for net0.\n\n" +
         "Args:\n" +
-        "  - node (string, required): Target Proxmox node\n" +
+        "  - node (string, required): Target Proxmox node (from overlord_cluster_status)\n" +
         "  - vmid (number, optional): VM ID — omit to auto-assign next available ID\n" +
         "  - name (string, required): VM name\n" +
         "  - memory (number, optional, default 2048): Memory in MB\n" +
         "  - cores (number, optional, default 2): CPU cores\n" +
         "  - sockets (number, optional, default 1): CPU sockets\n" +
-        "  - net0 (string, optional, default 'virtio,bridge=vmbr0'): Network configuration\n" +
-        "  - scsi0 (string, optional): Disk storage spec (e.g. 'local-lvm:32' for 32GB)\n" +
-        "  - ostype (enum, optional, default 'l26'): OS type — 'l26' (Linux), 'win11', 'win10', 'other'\n" +
+        "  - net0 (string, optional, default 'virtio,bridge=vmbr0'): Network config. Format: 'model,bridge=BRIDGE'. Use overlord_network_list to find bridges.\n" +
+        "  - scsi0 (string, optional): Disk — format: 'STORAGE_ID:SIZE_GB' (e.g. 'local-lvm:32'). Use overlord_storage_list to find storage IDs.\n" +
+        "  - ostype (enum, optional, default 'l26'): 'l26' = Linux 2.6+ (all modern Linux), 'win11', 'win10', 'other'\n" +
         "  - start_after_create (boolean, optional, default false): Start VM after creation\n\n" +
         "Returns: Created VM ID and status.\n\n" +
         "Example: { node: 'pve', name: 'test-vm', memory: 4096, cores: 4, scsi0: 'local-lvm:32' }",

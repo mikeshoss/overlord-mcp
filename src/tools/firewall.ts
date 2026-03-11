@@ -52,11 +52,15 @@ export function registerFirewallTools(
     {
       description:
         "Create a firewall rule for a VM or at the cluster level.\n\n" +
+        "IMPORTANT: The Proxmox firewall is DISABLED by default at every level. Rules only take effect " +
+        "after you enable the firewall with overlord_firewall_options: { options: { enable: 1 } }. " +
+        "Enable at both cluster level AND VM level.\n\n" +
         "Common patterns:\n" +
         "  - Allow SSH: { action: 'ACCEPT', type: 'in', proto: 'tcp', dport: '22' }\n" +
         "  - Allow HTTP+HTTPS: { action: 'ACCEPT', type: 'in', proto: 'tcp', dport: '80,443' }\n" +
         "  - Block all incoming: { action: 'DROP', type: 'in' }\n" +
-        "  - Allow ICMP ping: { action: 'ACCEPT', type: 'in', proto: 'icmp' }\n\n" +
+        "  - Allow ICMP ping: { action: 'ACCEPT', type: 'in', proto: 'icmp' }\n" +
+        "  - Allow from IP set: { action: 'ACCEPT', type: 'in', source: '+trusted-ips' }\n\n" +
         "Args:\n" +
         "  - node (string, optional): Node name — required for VM rules\n" +
         "  - vmid (number, optional): VM ID — if provided, creates VM rule; otherwise cluster rule\n" +

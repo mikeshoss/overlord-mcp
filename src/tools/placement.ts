@@ -28,7 +28,9 @@ export function registerPlacementTools(
       description:
         "Recommend the best node to place a new VM based on current cluster resource usage. " +
         "Analyzes CPU load, memory availability, and VM count across all online nodes.\n\n" +
-        "Use this instead of guessing which node to deploy to. The recommendation considers:\n" +
+        "USAGE: Call this BEFORE overlord_vm_create, overlord_template_clone, or overlord_lxc_create " +
+        "to get the recommended node name. Pass the returned 'recommended_node' as the 'node' or 'target_node' parameter.\n\n" +
+        "The recommendation considers:\n" +
         "  - CPU utilization (lower is better)\n" +
         "  - Memory available (more is better)\n" +
         "  - VM density (fewer VMs = less contention)\n\n" +

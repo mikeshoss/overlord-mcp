@@ -84,12 +84,16 @@ export function registerNetworkTools(
     {
       description:
         "Create a new network interface (bridge, bond, or VLAN) on a Proxmox node.\n\n" +
+        "REQUIRED WORKFLOW:\n" +
+        "  1. overlord_network_create — stage the new interface (this tool)\n" +
+        "  2. overlord_network_list — review staged changes\n" +
+        "  3. overlord_network_apply — commit and activate changes\n" +
+        "  OR overlord_network_revert — discard staged changes\n" +
+        "  Changes do NOT take effect until overlord_network_apply is called.\n\n" +
         "Common use cases:\n" +
         "  - Create a new bridge for VM isolation: { type: 'bridge', iface: 'vmbr1' }\n" +
         "  - Create a VLAN interface: { type: 'vlan', iface: 'eno1.100' } (VLAN 100 on eno1)\n" +
         "  - Create a bridge on a VLAN: create VLAN first, then bridge with bridge_ports set to the VLAN\n\n" +
-        "IMPORTANT: Changes are staged and require overlord_network_apply to take effect. " +
-        "This is a Proxmox safety mechanism — you can review changes before applying.\n\n" +
         "Args:\n" +
         "  - node (string, required): Proxmox node name\n" +
         "  - iface (string, required): Interface name (e.g. 'vmbr1', 'bond0', 'eno1.100')\n" +

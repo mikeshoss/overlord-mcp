@@ -50,21 +50,29 @@ export function registerCloudInitTools(
     "overlord_cloudinit_set",
     {
       description:
-        "Set Cloud-Init configuration on a VM. This injects settings that will be applied " +
-        "on next boot via Cloud-Init (the VM's template must have cloud-init support).\n\n" +
-        "After setting cloud-init config, regenerate the cloud-init image with " +
-        "overlord_cloudinit_regenerate, then reboot the VM.\n\n" +
+        "Set Cloud-Init configuration on a VM. Injects SSH keys, hostname, network config, " +
+        "and user-data into a VM *before* it boots — more reliable than guest-exec for initial setup.\n\n" +
+        "PREREQUISITE: The VM's template/image must have cloud-init support (e.g. Ubuntu cloud images, " +
+        "Debian cloud images). Regular ISO installs do NOT have cloud-init.\n\n" +
+        "REQUIRED WORKFLOW (3 steps):\n" +
+        "  1. overlord_cloudinit_set — configure settings (this tool)\n" +
+        "  2. overlord_cloudinit_regenerate — write settings to the cloud-init drive\n" +
+        "  3. overlord_vm_reboot — reboot for cloud-init to apply\n" +
+        "  Skipping steps 2 or 3 means changes will NOT take effect.\n\n" +
         "Args:\n" +
         "  - node (string, required): Proxmox node name\n" +
         "  - vmid (number, required): VM ID\n" +
         "  - ciuser (string, optional): Default user name\n" +
         "  - cipassword (string, optional): Default user password\n" +
-        "  - sshkeys (string, optional): SSH public keys (URL-encoded, one per line)\n" +
-        "  - nameserver (string, optional): DNS server (e.g. '8.8.8.8')\n" +
-        "  - searchdomain (string, optional): DNS search domain\n" +
-        "  - ipconfig0 (string, optional): IP config for first NIC. Format: 'ip=10.0.0.10/24,gw=10.0.0.1' or 'ip=dhcp'\n" +
-        "  - ipconfig1 (string, optional): IP config for second NIC\n\n" +
-        "Returns: Confirmation.\n\n" +
+        "  - sshkeys (string, optional): SSH public keys (plain text, one per line — will be URL-encoded automatically)\n" +
+        "  - nameserver (string, optional): DNS server(s), space-separated (e.g. '8.8.8.8 1.1.1.1')\n" +
+        "  - searchdomain (string, optional): DNS search domain (e.g. 'example.com')\n" +
+        "  - ipconfig0 (string, optional): IP config for first NIC:\n" +
+        "      Static: 'ip=10.0.0.10/24,gw=10.0.0.1'\n" +
+        "      DHCP: 'ip=dhcp'\n" +
+        "      IPv6: 'ip=dhcp,ip6=auto'\n" +
+        "  - ipconfig1 (string, optional): IP config for second NIC (same format)\n\n" +
+        "Returns: Confirmation with list of updated fields.\n\n" +
         "Example: { node: 'pve', vmid: 201, ciuser: 'admin', sshkeys: 'ssh-ed25519 AAAA...', ipconfig0: 'ip=10.0.0.50/24,gw=10.0.0.1', nameserver: '8.8.8.8' }",
       inputSchema: CloudInitSetSchema,
       annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },

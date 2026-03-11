@@ -78,14 +78,19 @@ export function registerPoolTools(
     {
       description:
         "Add or remove VMs/containers/storage from a resource pool.\n\n" +
+        "DISCOVERY: Call overlord_pool_get to see current pool members. " +
+        "Call overlord_cluster_resources to find VMIDs to add.\n\n" +
+        "HOW IT WORKS:\n" +
+        "  - To ADD: pass vms and/or storage with delete_members=false (default)\n" +
+        "  - To REMOVE: pass the same vms/storage AND set delete_members=true\n\n" +
         "Args:\n" +
         "  - poolid (string, required): Pool name\n" +
-        "  - vms (string, optional): Comma-separated VM/container IDs to add (e.g. '201,202,300')\n" +
-        "  - storage (string, optional): Comma-separated storage IDs to add (e.g. 'local-lvm')\n" +
-        "  - delete_members (boolean, optional, default false): If true, remove the specified VMs/storage instead of adding\n\n" +
+        "  - vms (string, optional): Comma-separated VM/container IDs (e.g. '201,202,300')\n" +
+        "  - storage (string, optional): Comma-separated storage IDs (e.g. 'local-lvm')\n" +
+        "  - delete_members (boolean, optional, default false): false=add, true=remove\n\n" +
         "Returns: Confirmation.\n\n" +
-        "Example: { poolid: 'production', vms: '201,202' } — add VMs\n" +
-        "Example: { poolid: 'production', vms: '201', delete_members: true } — remove VM 201",
+        "Example: { poolid: 'production', vms: '201,202' } — add VMs 201 and 202\n" +
+        "Example: { poolid: 'production', vms: '201', delete_members: true } — remove VM 201 from pool",
       inputSchema: PoolUpdateSchema,
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     },

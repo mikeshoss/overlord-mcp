@@ -44,14 +44,18 @@ export function registerTemplateTools(
       description:
         "Clone a VM template into a new runnable VM. This is THE key tool for provisioning — " +
         "it creates a new VM from a pre-configured template image.\n\n" +
+        "DISCOVERY: Call overlord_template_list first to find available template_vmid values and which node they're on. " +
+        "Use overlord_smart_placement to choose the best target_node. " +
+        "Use overlord_storage_list with resource_type='storage' to find storage pool names.\n\n" +
+        "TIP: For a complete one-call workflow (clone → start → provision), use overlord_clone_and_provision instead.\n\n" +
         "Full clone vs linked clone:\n" +
         "  - Full clone (default): Creates an independent copy. Uses more disk space but the " +
         "new VM has no dependency on the template.\n" +
         "  - Linked clone: Shares the template's base image. Much faster and uses less disk, " +
         "but the template must remain intact for the clone to function.\n\n" +
         "Args:\n" +
-        "  - node (string, required): Node where the template lives\n" +
-        "  - template_vmid (number, required): VMID of the template to clone\n" +
+        "  - node (string, required): Node where the template lives (from overlord_template_list)\n" +
+        "  - template_vmid (number, required): VMID of the template to clone (from overlord_template_list)\n" +
         "  - new_vmid (number, optional): VMID for the new VM — omit to auto-assign\n" +
         "  - name (string, required): Name for the new VM\n" +
         "  - target_node (string, optional): Deploy the clone to a different node\n" +

@@ -25,7 +25,10 @@ export function registerMetricsTools(
         "  - node (string, required): Proxmox node name\n" +
         "  - vmid (number, required): VM ID\n" +
         "  - timeframe (string, optional, default 'hour'): Time range\n\n" +
-        "Returns: Time-series data with CPU%, memory, disk I/O, and network metrics.\n\n" +
+        "Returns: Array of data points, each with a 'time' (unix timestamp) and metric values:\n" +
+        "  cpu (0-1 fraction), mem (bytes used), maxmem (bytes total),\n" +
+        "  disk (bytes used), maxdisk (bytes total),\n" +
+        "  netin/netout (bytes), diskread/diskwrite (bytes).\n\n" +
         "Example: { node: 'pve', vmid: 201 } — last hour\n" +
         "Example: { node: 'pve', vmid: 201, timeframe: 'day' } — last 24 hours",
       inputSchema: VmMetricsSchema,

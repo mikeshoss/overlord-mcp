@@ -46,16 +46,19 @@ export function registerVmConfigTools(
     {
       description:
         "Modify VM configuration settings. Pass key-value pairs matching Proxmox config options.\n\n" +
+        "DISCOVERY: Call overlord_vm_config_get first to see current settings and valid keys.\n\n" +
+        "REBOOT BEHAVIOR: Most settings (memory, cores, sockets, cpu type) require a VM reboot to take effect. " +
+        "Settings that apply immediately: name, description, onboot, agent, tags.\n\n" +
         "Common config keys:\n" +
-        "  - memory: RAM in MB (e.g. 4096)\n" +
-        "  - cores: CPU cores (e.g. 4)\n" +
-        "  - sockets: CPU sockets (e.g. 1)\n" +
-        "  - name: VM display name\n" +
-        "  - description: VM description/notes\n" +
-        "  - net0: Network config (e.g. 'virtio,bridge=vmbr0')\n" +
-        "  - boot: Boot order (e.g. 'order=scsi0;ide2;net0')\n" +
-        "  - onboot: Start on host boot (1 or 0)\n" +
-        "  - agent: Enable QEMU guest agent (1 or 0)\n\n" +
+        "  - memory: RAM in MB (e.g. 4096) — requires reboot\n" +
+        "  - cores: CPU cores (e.g. 4) — requires reboot\n" +
+        "  - sockets: CPU sockets (e.g. 1) — requires reboot\n" +
+        "  - name: VM display name — immediate\n" +
+        "  - description: VM description/notes — immediate\n" +
+        "  - net0: Network config (e.g. 'virtio,bridge=vmbr0') — requires reboot\n" +
+        "  - boot: Boot order (e.g. 'order=scsi0;ide2;net0') — next boot\n" +
+        "  - onboot: Start on host boot (1 or 0) — immediate\n" +
+        "  - agent: Enable QEMU guest agent (1 or 0) — requires reboot\n\n" +
         "Args:\n" +
         "  - node (string, required): Proxmox node name\n" +
         "  - vmid (number, required): VM ID to modify\n" +

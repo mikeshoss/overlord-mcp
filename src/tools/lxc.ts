@@ -46,8 +46,9 @@ export function registerLxcTools(
       description:
         "Create a new LXC container from a template. Containers are much faster to create " +
         "and start than VMs — ideal for dev environments, build agents, and microservices.\n\n" +
-        "The ostemplate must be available on the node's storage. Use overlord_storage_content " +
-        "with content='vztmpl' to see available templates.\n\n" +
+        "DISCOVERY: Call overlord_iso_list with content='vztmpl' (or overlord_storage_content with content='vztmpl') " +
+        "to find available ostemplate values. The returned 'volid' is the ostemplate parameter. " +
+        "If no templates exist, use overlord_iso_download with content='vztmpl' to download one.\n\n" +
         "Args:\n" +
         "  - node (string, required): Proxmox node name\n" +
         "  - vmid (number, optional): Container ID — omit to auto-assign\n" +
@@ -60,10 +61,11 @@ export function registerLxcTools(
         "  - net0 (string, optional): Network config (e.g. 'name=eth0,bridge=vmbr0,ip=dhcp')\n" +
         "  - password (string, optional): Root password\n" +
         "  - ssh_public_keys (string, optional): SSH public keys for root\n" +
-        "  - unprivileged (boolean, optional, default true): Unprivileged container (more secure)\n" +
+        "  - unprivileged (boolean, optional, default true): true=safer (UIDs are mapped, can't escalate to host). false=privileged (runs as real root, needed for NFS mounts or Docker-in-LXC).\n" +
         "  - start_after_create (boolean, optional, default false): Start after creation\n\n" +
         "Returns: Created container ID and status.\n\n" +
-        "Example: { node: 'pve', hostname: 'build-agent', ostemplate: 'local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst', memory: 2048, cores: 2, net0: 'name=eth0,bridge=vmbr0,ip=dhcp' }",
+        "Example: { node: 'pve', hostname: 'build-agent', ostemplate: 'local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst', memory: 2048, cores: 2, net0: 'name=eth0,bridge=vmbr0,ip=dhcp' }\n" +
+        "Example (static IP): { node: 'pve', hostname: 'web-01', ostemplate: 'local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst', net0: 'name=eth0,bridge=vmbr0,ip=10.0.0.50/24,gw=10.0.0.1' }",
       inputSchema: LxcCreateSchema,
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     },

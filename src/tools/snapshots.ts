@@ -94,10 +94,11 @@ export function registerSnapshotTools(
         "⚠️ Rollback a VM to a previous snapshot. WARNING: ALL changes made since the snapshot " +
         "will be PERMANENTLY LOST. The VM will be restored to exactly the state it was in when " +
         "the snapshot was taken.\n\n" +
+        "DISCOVERY: Call overlord_snapshot_list first to find available snapshot names for this VM.\n\n" +
         "Args:\n" +
         "  - node (string, required): Proxmox node name\n" +
         "  - vmid (number, required): VM ID\n" +
-        "  - snapname (string, required): Name of the snapshot to rollback to\n\n" +
+        "  - snapname (string, required): Name of the snapshot to rollback to (from overlord_snapshot_list)\n\n" +
         "Returns: Task result confirming rollback.\n\n" +
         "Example: { node: 'pve', vmid: 100, snapname: 'before-update' }",
       inputSchema: SnapshotRollbackSchema,

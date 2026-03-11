@@ -40,9 +40,14 @@ export function registerHaTools(
       description:
         "Add a VM or container to HA management. Once added, Proxmox will automatically " +
         "restart or relocate the VM if its host node fails.\n\n" +
+        "WORKFLOW: To set up HA with node preferences:\n" +
+        "  1. overlord_ha_group_create — define which nodes can host the VM and their priority\n" +
+        "  2. overlord_ha_resource_create — add the VM to HA and assign it to the group\n" +
+        "  You can skip step 1 if you don't need node preferences.\n\n" +
+        "DISCOVERY: Use overlord_cluster_resources to find VMIDs. Use overlord_ha_group_list to find group names.\n\n" +
         "Args:\n" +
         "  - sid (string, required): Service ID — format 'vm:VMID' or 'ct:VMID' (e.g. 'vm:201')\n" +
-        "  - group (string, optional): HA group to assign to (determines preferred nodes)\n" +
+        "  - group (string, optional): HA group name (from overlord_ha_group_list or overlord_ha_group_create)\n" +
         "  - state (string, optional, default 'started'): Desired state — 'started', 'stopped', 'enabled', 'disabled'\n" +
         "  - max_restart (number, optional, default 1): Max restart attempts on same node\n" +
         "  - max_relocate (number, optional, default 1): Max relocate attempts to other nodes\n" +
@@ -116,10 +121,12 @@ export function registerHaTools(
     {
       description:
         "Create an HA group. Groups define preferred nodes for HA resources.\n\n" +
-        "Node format: 'node1:priority,node2:priority' — higher priority = preferred.\n\n" +
+        "DISCOVERY: Call overlord_cluster_status to find node names.\n\n" +
+        "Node format: 'node1:priority,node2:priority' — higher priority number = more preferred. " +
+        "Range: 0-1000. Example: 'pve1:100,pve2:50' means pve1 is preferred, pve2 is fallback.\n\n" +
         "Args:\n" +
-        "  - group (string, required): Group name\n" +
-        "  - nodes (string, required): Node list with priorities (e.g. 'pve1:2,pve2:1')\n" +
+        "  - group (string, required): Group name (no spaces)\n" +
+        "  - nodes (string, required): Node list with priorities (e.g. 'pve1:100,pve2:50')\n" +
         "  - restricted (boolean, optional, default false): If true, resources can ONLY run on group nodes\n" +
         "  - nofailback (boolean, optional, default false): Don't migrate back to higher-priority node after recovery\n" +
         "  - comment (string, optional): Description\n\n" +

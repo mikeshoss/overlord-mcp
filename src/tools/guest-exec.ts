@@ -55,8 +55,12 @@ export function registerGuestExecTools(
         "(agent: 1).\n\n" +
         "The command runs inside the VM's OS, not on the Proxmox host. This is how you interact " +
         "with the VM's operating system — run commands, check services, install packages, etc.\n\n" +
-        "IMPORTANT: The default timeout is 60 seconds. For long-running commands like package " +
-        "installs (apt install), builds, or downloads, set timeout_seconds to 300-600.\n\n" +
+        "IMPORTANT: The default timeout is 60 seconds. Recommended timeouts:\n" +
+        "  - Simple commands (ls, cat, hostname): 60s (default)\n" +
+        "  - Package install (apt install, yum install): 300s\n" +
+        "  - Large downloads or builds: 600s\n" +
+        "  - Compilations (make, cargo build): 600s\n\n" +
+        "Input data (input_data): Passed as plain text to stdin of the command. Not base64.\n\n" +
         "Workflow: overlord_vm_start → overlord_guest_ping → overlord_guest_exec\n\n" +
         "Args:\n" +
         "  - node (string, required): Proxmox node name\n" +
