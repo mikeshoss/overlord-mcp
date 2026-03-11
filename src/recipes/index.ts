@@ -701,6 +701,7 @@ Write-Output "windows_exporter installed and running on :9182"
         shell: "bash",
         script: `#!/bin/bash
 set -euo pipefail
+export DEBIAN_FRONTEND=noninteractive
 
 if ! command -v docker &>/dev/null; then
   echo "ERROR: Docker is required. Add 'docker' to your recipes list before 'reaper_mcp'."
