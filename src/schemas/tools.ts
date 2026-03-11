@@ -276,6 +276,315 @@ export const GuestFileWriteSchema = z.object({
   content: z.string().describe("File content to write"),
 }).strict();
 
+// ── Firewall ────────────────────────────────────────────────────────────────
+
+export const FirewallRulesListSchema = z.object({
+  node: z.string().optional().describe("Node name — required for VM-level rules"),
+  vmid: vmid.optional().describe("VM ID — if provided, shows VM rules; otherwise cluster rules"),
+}).strict();
+
+export const FirewallRuleCreateSchema = z.object({
+  node: z.string().optional().describe("Node name — required for VM rules"),
+  vmid: vmid.optional().describe("VM ID — omit for cluster-level rule"),
+  action: z.enum(["ACCEPT", "DROP", "REJECT"]).describe("Rule action"),
+  type: z.enum(["in", "out", "group"]).describe("Traffic direction"),
+  proto: z.string().optional().describe("Protocol — 'tcp', 'udp', 'icmp'"),
+  dport: z.string().optional().describe("Destination port(s) — '22', '80,443', '8000-8100'"),
+  sport: z.string().optional().describe("Source port(s)"),
+  source: z.string().optional().describe("Source CIDR (e.g. '10.0.0.0/8')"),
+  dest: z.string().optional().describe("Destination CIDR"),
+  comment: z.string().optional().describe("Rule description"),
+  enable: z.boolean().default(true).optional().describe("Enable the rule (default: true)"),
+  pos: z.number().int().optional().describe("Position in rule chain (0 = first)"),
+}).strict();
+
+export const FirewallRuleDeleteSchema = z.object({
+  node: z.string().optional().describe("Node name — required for VM rules"),
+  vmid: vmid.optional().describe("VM ID"),
+  pos: z.number().int().describe("Rule position to delete"),
+}).strict();
+
+export const FirewallOptionsSchema = z.object({
+  node: z.string().optional().describe("Node name — required for VM options"),
+  vmid: vmid.optional().describe("VM ID"),
+  options: z.record(z.union([z.string(), z.number()])).optional().describe(
+    "Options to set. Common: enable (0/1), policy_in, policy_out. Omit to get current options."
+  ),
+}).strict();
+
+export const FirewallIPSetListSchema = z.object({}).strict();
+
+export const FirewallIPSetCreateSchema = z.object({
+  name: z.string().min(1).describe("IP set name"),
+  comment: z.string().optional().describe("Description"),
+}).strict();
+
+export const FirewallIPSetEntryAddSchema = z.object({
+  name: z.string().min(1).describe("IP set name"),
+  cidr: z.string().min(1).describe("IP or CIDR to add (e.g. '10.0.0.5', '192.168.1.0/24')"),
+  comment: z.string().optional().describe("Description"),
+}).strict();
+
+// ── Cloud-Init ──────────────────────────────────────────────────────────────
+
+export const CloudInitGetSchema = z.object({
+  node: node,
+  vmid: vmid.describe("VM ID"),
+}).strict();
+
+export const CloudInitSetSchema = z.object({
+  node: node,
+  vmid: vmid.describe("VM ID"),
+  ciuser: z.string().optional().describe("Default user name"),
+  cipassword: z.string().optional().describe("Default user password"),
+  sshkeys: z.string().optional().describe("SSH public keys (one per line)"),
+  nameserver: z.string().optional().describe("DNS server (e.g. '8.8.8.8')"),
+  searchdomain: z.string().optional().describe("DNS search domain"),
+  ipconfig0: z.string().optional().describe("IP config for NIC 0 (e.g. 'ip=10.0.0.10/24,gw=10.0.0.1' or 'ip=dhcp')"),
+  ipconfig1: z.string().optional().describe("IP config for NIC 1"),
+}).strict();
+
+export const CloudInitRegenerateSchema = z.object({
+  node: node,
+  vmid: vmid.describe("VM ID"),
+}).strict();
+
+// ── Task Management ─────────────────────────────────────────────────────────
+
+export const TaskListSchema = z.object({
+  node: node,
+  limit: z.number().int().positive().default(50).optional().describe("Max tasks (default: 50)"),
+  running: z.boolean().optional().describe("Only show running tasks"),
+  vmid: vmid.optional().describe("Filter by VM ID"),
+  type_filter: z.string().optional().describe("Filter by task type (e.g. 'qmclone', 'vzdump', 'qmigrate')"),
+}).strict();
+
+export const TaskStatusSchema = z.object({
+  node: node,
+  upid: z.string().min(1).describe("Task UPID"),
+}).strict();
+
+export const TaskLogSchema = z.object({
+  node: node,
+  upid: z.string().min(1).describe("Task UPID"),
+  limit: z.number().int().positive().default(500).optional().describe("Max log lines (default: 500)"),
+  start: z.number().int().default(0).optional().describe("Start from line number"),
+}).strict();
+
+// ── Console ─────────────────────────────────────────────────────────────────
+
+export const ConsoleUrlSchema = z.object({
+  node: node,
+  vmid: vmid.describe("VM ID"),
+  type: z.enum(["vnc", "spice"]).default("vnc").optional().describe("Console type (default: vnc)"),
+}).strict();
+
+// ── LXC Containers ──────────────────────────────────────────────────────────
+
+export const LxcListSchema = z.object({
+  node: node,
+}).strict();
+
+export const LxcCreateSchema = z.object({
+  node: node,
+  vmid: vmid.optional().describe("Container ID — omit to auto-assign"),
+  hostname: z.string().min(1).describe("Container hostname"),
+  ostemplate: z.string().min(1).describe("Template (e.g. 'local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst')"),
+  storage: z.string().optional().describe("Root filesystem storage (default: local-lvm)"),
+  rootfs_size: z.number().int().positive().default(8).optional().describe("Root filesystem size in GB (default: 8)"),
+  memory: z.number().int().positive().default(512).optional().describe("Memory in MB (default: 512)"),
+  cores: z.number().int().positive().default(1).optional().describe("CPU cores (default: 1)"),
+  net0: z.string().optional().describe("Network config (e.g. 'name=eth0,bridge=vmbr0,ip=dhcp')"),
+  password: z.string().optional().describe("Root password"),
+  ssh_public_keys: z.string().optional().describe("SSH public keys for root"),
+  unprivileged: z.boolean().default(true).optional().describe("Unprivileged container (default: true, more secure)"),
+  start_after_create: z.boolean().default(false).optional().describe("Start after creation (default: false)"),
+}).strict();
+
+export const LxcStartSchema = z.object({
+  node: node,
+  vmid: vmid.describe("Container ID"),
+}).strict();
+
+export const LxcStopSchema = z.object({
+  node: node,
+  vmid: vmid.describe("Container ID"),
+}).strict();
+
+export const LxcDestroySchema = z.object({
+  node: node,
+  vmid: vmid.describe("Container ID to destroy"),
+  confirm_destroy: z.boolean().describe("MUST be true — safety check"),
+}).strict();
+
+export const LxcConfigGetSchema = z.object({
+  node: node,
+  vmid: vmid.describe("Container ID"),
+}).strict();
+
+export const LxcConfigSetSchema = z.object({
+  node: node,
+  vmid: vmid.describe("Container ID"),
+  config: z.record(z.union([z.string(), z.number(), z.boolean()])).describe(
+    "Key-value config options (memory, cores, hostname, net0, etc.)"
+  ),
+}).strict();
+
+// ── ISO/Image Management ────────────────────────────────────────────────────
+
+export const IsoListSchema = z.object({
+  node: node,
+  storage: z.string().min(1).describe("Storage ID"),
+  content: z.enum(["iso", "vztmpl"]).default("iso").optional().describe("Content type (default: iso)"),
+}).strict();
+
+export const IsoDownloadSchema = z.object({
+  node: node,
+  storage: z.string().min(1).describe("Target storage ID"),
+  url: z.string().url().describe("Direct download URL for the ISO/template"),
+  filename: z.string().min(1).describe("Filename to save as (e.g. 'ubuntu-22.04.iso')"),
+  content: z.enum(["iso", "vztmpl"]).default("iso").optional().describe("Content type (default: iso)"),
+  checksum: z.string().optional().describe("Expected SHA256 checksum"),
+  checksum_algorithm: z.string().optional().describe("Checksum algorithm (default: sha256)"),
+}).strict();
+
+// ── HA (High Availability) ──────────────────────────────────────────────────
+
+export const HaResourceListSchema = z.object({}).strict();
+
+export const HaResourceCreateSchema = z.object({
+  sid: z.string().min(1).describe("Service ID — 'vm:VMID' or 'ct:VMID' (e.g. 'vm:201')"),
+  group: z.string().optional().describe("HA group name"),
+  state: z.enum(["started", "stopped", "enabled", "disabled"]).default("started").optional()
+    .describe("Desired state (default: started)"),
+  max_restart: z.number().int().default(1).optional().describe("Max restart attempts on same node (default: 1)"),
+  max_relocate: z.number().int().default(1).optional().describe("Max relocate attempts (default: 1)"),
+  comment: z.string().optional().describe("Description"),
+}).strict();
+
+export const HaResourceDeleteSchema = z.object({
+  sid: z.string().min(1).describe("Service ID (e.g. 'vm:201')"),
+}).strict();
+
+export const HaGroupListSchema = z.object({}).strict();
+
+export const HaGroupCreateSchema = z.object({
+  group: z.string().min(1).describe("Group name"),
+  nodes: z.string().min(1).describe("Node list with priorities (e.g. 'pve1:2,pve2:1')"),
+  restricted: z.boolean().optional().describe("Resources can only run on group nodes"),
+  nofailback: z.boolean().optional().describe("Don't migrate back after recovery"),
+  comment: z.string().optional().describe("Description"),
+}).strict();
+
+// ── Resource Pools ──────────────────────────────────────────────────────────
+
+export const PoolListSchema = z.object({}).strict();
+
+export const PoolGetSchema = z.object({
+  poolid: z.string().min(1).describe("Pool name"),
+}).strict();
+
+export const PoolCreateSchema = z.object({
+  poolid: z.string().min(1).describe("Pool name (no spaces)"),
+  comment: z.string().optional().describe("Description"),
+}).strict();
+
+export const PoolUpdateSchema = z.object({
+  poolid: z.string().min(1).describe("Pool name"),
+  vms: z.string().optional().describe("Comma-separated VM/container IDs to add/remove"),
+  storage: z.string().optional().describe("Comma-separated storage IDs to add/remove"),
+  delete_members: z.boolean().default(false).optional().describe("Remove instead of add (default: false)"),
+}).strict();
+
+// ── Bulk Operations ─────────────────────────────────────────────────────────
+
+export const BulkActionSchema = z.object({
+  node: node,
+  vmids: z.array(vmid).min(1).describe("Array of VM/container IDs"),
+  action: z.enum(["start", "stop", "shutdown", "reboot", "snapshot"]).describe("Action to perform"),
+  snapshot_name: z.string().optional().describe("Required when action='snapshot'"),
+}).strict();
+
+// ── Clone & Provision Workflow ──────────────────────────────────────────────
+
+export const CloneAndProvisionSchema = z.object({
+  node: node.describe("Node where the template lives"),
+  template_vmid: vmid.describe("Template VMID to clone"),
+  name: z.string().min(1).describe("Name for the new VM"),
+  new_vmid: vmid.optional().describe("VMID for new VM — omit to auto-assign"),
+  target_node: z.string().optional().describe("Deploy to a different node"),
+  full_clone: z.boolean().default(true).optional().describe("Full vs linked clone (default: true)"),
+  storage: z.string().optional().describe("Target storage"),
+  recipes: z.array(z.string()).optional().describe("Recipes to provision after clone (e.g. ['docker', 'node'])"),
+  agent_timeout: z.number().int().positive().default(120).optional().describe("Seconds to wait for guest agent (default: 120)"),
+}).strict();
+
+// ── VM Metrics ──────────────────────────────────────────────────────────────
+
+export const VmMetricsSchema = z.object({
+  node: node,
+  vmid: vmid.describe("VM ID"),
+  timeframe: z.enum(["hour", "day", "week", "month", "year"]).default("hour").optional()
+    .describe("Time range (default: hour)"),
+}).strict();
+
+export const NodeMetricsSchema = z.object({
+  node: node,
+  timeframe: z.enum(["hour", "day", "week", "month", "year"]).default("hour").optional()
+    .describe("Time range (default: hour)"),
+}).strict();
+
+// ── Logs / Audit ────────────────────────────────────────────────────────────
+
+export const ClusterLogSchema = z.object({
+  max: z.number().int().positive().default(100).optional().describe("Max entries (default: 100)"),
+}).strict();
+
+export const NodeSyslogSchema = z.object({
+  node: node,
+  limit: z.number().int().positive().default(100).optional().describe("Max lines (default: 100)"),
+  since: z.string().optional().describe("Only entries since this timestamp (ISO 8601)"),
+  service: z.string().optional().describe("Filter by service name (e.g. 'pvedaemon')"),
+}).strict();
+
+// ── Smart Placement ─────────────────────────────────────────────────────────
+
+export const SmartPlacementSchema = z.object({
+  min_memory_mb: z.number().int().positive().optional().describe("Minimum free memory required in MB"),
+  min_cores: z.number().int().positive().optional().describe("Minimum CPU cores required"),
+  prefer_empty: z.boolean().default(false).optional().describe("Heavily prefer nodes with fewer VMs"),
+}).strict();
+
+// ── Webhooks / Notifications ────────────────────────────────────────────────
+
+export const WebhookSendSchema = z.object({
+  url: z.string().url().describe("Webhook endpoint URL"),
+  payload: z.record(z.unknown()).describe("JSON payload to send"),
+  format: z.enum(["raw", "slack", "discord"]).default("raw").optional()
+    .describe("Format shortcut (default: raw)"),
+  headers: z.record(z.string()).optional().describe("Additional HTTP headers"),
+}).strict();
+
+export const WebhookTestSchema = z.object({
+  url: z.string().url().describe("Webhook endpoint URL"),
+  format: z.enum(["raw", "slack", "discord"]).default("raw").optional()
+    .describe("Format (default: raw)"),
+}).strict();
+
+// ── DNS Management ──────────────────────────────────────────────────────────
+
+export const DnsLookupSchema = z.object({
+  node: node,
+  vmid: vmid.describe("VM ID to resolve from"),
+  hostname: z.string().min(1).describe("Hostname to resolve"),
+}).strict();
+
+export const DnsSetHostnameSchema = z.object({
+  node: node,
+  vmid: vmid.describe("VM ID"),
+  hostname: z.string().min(1).describe("New hostname"),
+}).strict();
+
 // ── Provisioning ────────────────────────────────────────────────────────────
 
 export const RecipeListSchema = z.object({

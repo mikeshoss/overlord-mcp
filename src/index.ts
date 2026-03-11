@@ -17,6 +17,21 @@ import { registerNetworkTools } from "./tools/networking.js";
 import { registerMigrationTools } from "./tools/migration.js";
 import { registerBackupTools } from "./tools/backup.js";
 import { registerStorageTools } from "./tools/storage.js";
+import { registerFirewallTools } from "./tools/firewall.js";
+import { registerCloudInitTools } from "./tools/cloud-init.js";
+import { registerTaskTools } from "./tools/tasks.js";
+import { registerConsoleTools } from "./tools/console.js";
+import { registerLxcTools } from "./tools/lxc.js";
+import { registerIsoTools } from "./tools/iso.js";
+import { registerHaTools } from "./tools/ha.js";
+import { registerPoolTools } from "./tools/pools.js";
+import { registerBulkTools } from "./tools/bulk.js";
+import { registerWorkflowTools } from "./tools/workflows.js";
+import { registerMetricsTools } from "./tools/metrics.js";
+import { registerLogTools } from "./tools/logs.js";
+import { registerPlacementTools } from "./tools/placement.js";
+import { registerNotifyTools } from "./tools/notify.js";
+import { registerDnsTools } from "./tools/dns.js";
 
 // Proxmox uses self-signed certificates by default — disable TLS verification
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
@@ -40,6 +55,21 @@ function createServer(): McpServer {
   registerMigrationTools(server, client);
   registerBackupTools(server, client);
   registerStorageTools(server, client);
+  registerFirewallTools(server, client);
+  registerCloudInitTools(server, client);
+  registerTaskTools(server, client);
+  registerConsoleTools(server, client);
+  registerLxcTools(server, client);
+  registerIsoTools(server, client);
+  registerHaTools(server, client);
+  registerPoolTools(server, client);
+  registerBulkTools(server, client);
+  registerWorkflowTools(server, client);
+  registerMetricsTools(server, client);
+  registerLogTools(server, client);
+  registerPlacementTools(server, client);
+  registerNotifyTools(server);
+  registerDnsTools(server, client);
 
   return server;
 }
