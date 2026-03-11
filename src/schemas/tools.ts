@@ -140,6 +140,7 @@ export const GuestExecSchema = z.object({
   vmid: vmid.describe("VM ID to execute command in"),
   command: z.string().min(1).describe("Command to run inside the VM (e.g. 'ip addr show', 'cat /etc/hostname')"),
   input_data: z.string().optional().describe("Data to pass as stdin to the command"),
+  timeout_seconds: z.number().int().positive().default(60).optional().describe("Max seconds to wait for command to finish (default: 60). Increase for long-running commands like package installs (e.g. 300 for apt install)."),
 }).strict();
 
 export const GuestFileReadSchema = z.object({

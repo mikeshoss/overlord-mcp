@@ -55,14 +55,18 @@ export function registerGuestExecTools(
         "(agent: 1).\n\n" +
         "The command runs inside the VM's OS, not on the Proxmox host. This is how you interact " +
         "with the VM's operating system — run commands, check services, install packages, etc.\n\n" +
+        "IMPORTANT: The default timeout is 60 seconds. For long-running commands like package " +
+        "installs (apt install), builds, or downloads, set timeout_seconds to 300-600.\n\n" +
+        "Workflow: overlord_vm_start → overlord_guest_ping → overlord_guest_exec\n\n" +
         "Args:\n" +
         "  - node (string, required): Proxmox node name\n" +
         "  - vmid (number, required): VM ID to execute command in\n" +
         "  - command (string, required): Command to run (e.g. 'ip addr show', 'whoami', 'apt update')\n" +
-        "  - input_data (string, optional): Data to pass as stdin to the command\n\n" +
+        "  - input_data (string, optional): Data to pass as stdin to the command\n" +
+        "  - timeout_seconds (number, optional, default 60): Max seconds to wait — increase for slow commands\n\n" +
         "Returns: Command output with stdout, stderr, and exit code.\n\n" +
         "Example: { node: 'pve', vmid: 100, command: 'cat /etc/os-release' }\n" +
-        "Example: { node: 'pve', vmid: 100, command: 'bash -c \"echo hello world\"' }",
+        "Example: { node: 'pve', vmid: 100, command: 'apt-get install -y docker.io', timeout_seconds: 300 }",
       inputSchema: GuestExecSchema,
       annotations: {
         readOnlyHint: false,
@@ -70,7 +74,7 @@ export function registerGuestExecTools(
         openWorldHint: false,
       },
     },
-    async ({ node, vmid, command, input_data }) => {
+    async ({ node, vmid, command, input_data, timeout_seconds }) => {
       const parts = command.split(/\s+/);
       const execParams: Record<string, unknown> = {
         command: parts[0],
@@ -87,7 +91,8 @@ export function registerGuestExecTools(
         execParams,
       );
 
-      const result = await pollExecStatus(client, node, vmid, execResponse.pid);
+      const timeoutMs = (timeout_seconds ?? 60) * 1000;
+      const result = await pollExecStatus(client, node, vmid, execResponse.pid, timeoutMs);
 
       const text = JSON.stringify(
         {
