@@ -26,7 +26,7 @@ export function registerDnsTools(
         "Returns: Resolved IP addresses.\n\n" +
         "Example: { node: 'pve', vmid: 201, hostname: 'google.com' }",
       inputSchema: DnsLookupSchema,
-      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+      annotations: { title: "DNS Lookup", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
     async ({ node, vmid, hostname }) => {
       const command = `getent hosts ${hostname} || nslookup ${hostname} 2>/dev/null || echo "RESOLVE_FAILED"`;
@@ -72,7 +72,7 @@ export function registerDnsTools(
         "Returns: Confirmation.\n\n" +
         "Example: { node: 'pve', vmid: 201, hostname: 'web-server-01' }",
       inputSchema: DnsSetHostnameSchema,
-      annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+      annotations: { title: "Set VM Hostname", readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
     },
     async ({ node, vmid, hostname: newHostname }) => {
       const script = `#!/bin/bash

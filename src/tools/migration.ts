@@ -40,8 +40,10 @@ export function registerMigrationTools(
         "Example: { node: 'pve1', vmid: 201, target: 'pve2', target_storage: 'local-lvm' }",
       inputSchema: VmMigrateSchema,
       annotations: {
+        title: "Migrate VM",
         readOnlyHint: false,
         destructiveHint: true,
+        idempotentHint: false,
         openWorldHint: false,
       },
     },

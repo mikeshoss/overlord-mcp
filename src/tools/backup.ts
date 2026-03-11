@@ -33,8 +33,10 @@ export function registerBackupTools(
         "Example: { node: 'pve', storage: 'local', vmid: 201 }",
       inputSchema: BackupListSchema,
       annotations: {
+        title: "List Backups",
         readOnlyHint: true,
         destructiveHint: false,
+        idempotentHint: true,
         openWorldHint: false,
       },
     },
@@ -99,8 +101,10 @@ export function registerBackupTools(
         "Example: { node: 'pve', vmid: 201, storage: 'nfs-backup', mode: 'stop', compress: 'zstd', notes: 'pre-upgrade backup' }",
       inputSchema: BackupCreateSchema,
       annotations: {
+        title: "Create Backup",
         readOnlyHint: false,
         destructiveHint: false,
+        idempotentHint: false,
         openWorldHint: false,
       },
     },
@@ -168,8 +172,10 @@ export function registerBackupTools(
         "Example: { node: 'pve', vmid: 201, archive: 'local:backup/vzdump-qemu-201-2024_01_15-12_00_00.vma.zst' }",
       inputSchema: BackupRestoreSchema,
       annotations: {
+        title: "Restore from Backup",
         readOnlyHint: false,
         destructiveHint: true,
+        idempotentHint: false,
         openWorldHint: false,
       },
     },
@@ -251,8 +257,10 @@ export function registerBackupTools(
         "Example: { node: 'pve', storage: 'local', volume: 'local:backup/vzdump-qemu-201-2024_01_15-12_00_00.vma.zst' }",
       inputSchema: BackupDeleteSchema,
       annotations: {
+        title: "Delete Backup",
         readOnlyHint: false,
         destructiveHint: true,
+        idempotentHint: true,
         openWorldHint: false,
       },
     },

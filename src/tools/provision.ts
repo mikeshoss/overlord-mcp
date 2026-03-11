@@ -137,8 +137,10 @@ export function registerProvisionTools(
         "Example: { platform: 'windows' } — show only Windows-compatible recipes",
       inputSchema: RecipeListSchema,
       annotations: {
+        title: "List Recipes",
         readOnlyHint: true,
         destructiveHint: false,
+        idempotentHint: true,
         openWorldHint: false,
       },
     },
@@ -192,8 +194,10 @@ export function registerProvisionTools(
         "Example: { node: 'pve', vmid: 300, recipes: ['chocolatey', 'openssh_server'] }  // Windows VM",
       inputSchema: ProvisionSchema,
       annotations: {
+        title: "Provision VM",
         readOnlyHint: false,
         destructiveHint: true,
+        idempotentHint: false,
         openWorldHint: false,
       },
     },

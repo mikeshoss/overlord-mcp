@@ -30,7 +30,7 @@ export function registerFirewallTools(
         "Example: {} — cluster-level rules\n" +
         "Example: { node: 'pve', vmid: 201 } — VM-level rules",
       inputSchema: FirewallRulesListSchema,
-      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+      annotations: { title: "List Firewall Rules", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
     async ({ node, vmid }) => {
       let path: string;
@@ -77,7 +77,7 @@ export function registerFirewallTools(
         "Returns: Confirmation of rule creation.\n\n" +
         "Example: { node: 'pve', vmid: 201, action: 'ACCEPT', type: 'in', proto: 'tcp', dport: '22,80,443', comment: 'Allow SSH and web' }",
       inputSchema: FirewallRuleCreateSchema,
-      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+      annotations: { title: "Create Firewall Rule", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     },
     async ({ node, vmid, action, type: ruleType, proto, dport, sport, source, dest, comment, enable, pos }) => {
       let path: string;
@@ -124,7 +124,7 @@ export function registerFirewallTools(
         "Returns: Confirmation.\n\n" +
         "Example: { node: 'pve', vmid: 201, pos: 0 }",
       inputSchema: FirewallRuleDeleteSchema,
-      annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+      annotations: { title: "Delete Firewall Rule", readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
     },
     async ({ node, vmid, pos }) => {
       let path: string;
@@ -160,7 +160,7 @@ export function registerFirewallTools(
         "Example: { node: 'pve', vmid: 201 } — get current options\n" +
         "Example: { node: 'pve', vmid: 201, options: { enable: 1, policy_in: 'DROP' } } — enable firewall, default drop incoming",
       inputSchema: FirewallOptionsSchema,
-      annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+      annotations: { title: "Firewall Options", readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
     },
     async ({ node, vmid, options }) => {
       let path: string;
@@ -193,7 +193,7 @@ export function registerFirewallTools(
         "Returns: List of IP set names.\n\n" +
         "Example: {}",
       inputSchema: FirewallIPSetListSchema,
-      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+      annotations: { title: "List IP Sets", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
     async () => {
       const ipsets = await client.get<Record<string, unknown>[]>("cluster/firewall/ipset");
@@ -215,7 +215,7 @@ export function registerFirewallTools(
         "Returns: Confirmation.\n\n" +
         "Example: { name: 'trusted-ips', comment: 'Trusted management IPs' }",
       inputSchema: FirewallIPSetCreateSchema,
-      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+      annotations: { title: "Create IP Set", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     },
     async ({ name, comment }) => {
       const data: Record<string, unknown> = { name };
@@ -239,7 +239,7 @@ export function registerFirewallTools(
         "Returns: Confirmation.\n\n" +
         "Example: { name: 'trusted-ips', cidr: '10.0.0.0/8', comment: 'Internal network' }",
       inputSchema: FirewallIPSetEntryAddSchema,
-      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+      annotations: { title: "Add IP Set Entry", readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
     async ({ name, cidr, comment }) => {
       const data: Record<string, unknown> = { cidr };

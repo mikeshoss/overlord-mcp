@@ -26,8 +26,10 @@ export function registerVmConfigTools(
         "Example: { node: 'pve', vmid: 100 }",
       inputSchema: VmConfigGetSchema,
       annotations: {
+        title: "Get VM Config",
         readOnlyHint: true,
         destructiveHint: false,
+        idempotentHint: true,
         openWorldHint: false,
       },
     },
@@ -67,8 +69,10 @@ export function registerVmConfigTools(
         "Example: { node: 'pve', vmid: 100, config: { memory: 4096, cores: 4, agent: 1 } }",
       inputSchema: VmConfigSetSchema,
       annotations: {
+        title: "Set VM Config",
         readOnlyHint: false,
         destructiveHint: true,
+        idempotentHint: true,
         openWorldHint: false,
       },
     },
@@ -102,8 +106,10 @@ export function registerVmConfigTools(
         "Example: { node: 'pve', vmid: 100, disk: 'scsi0', size: '+20G' }",
       inputSchema: VmResizeDiskSchema,
       annotations: {
+        title: "Resize VM Disk",
         readOnlyHint: false,
         destructiveHint: true,
+        idempotentHint: false,
         openWorldHint: false,
       },
     },

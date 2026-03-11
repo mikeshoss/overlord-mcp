@@ -28,7 +28,7 @@ export function registerLxcTools(
         "Returns: List of containers with VMID, name, status, CPU, memory.\n\n" +
         "Example: { node: 'pve' }",
       inputSchema: LxcListSchema,
-      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+      annotations: { title: "List Containers", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
     async ({ node }) => {
       const containers = await client.get<Record<string, unknown>[]>(
@@ -67,7 +67,7 @@ export function registerLxcTools(
         "Example: { node: 'pve', hostname: 'build-agent', ostemplate: 'local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst', memory: 2048, cores: 2, net0: 'name=eth0,bridge=vmbr0,ip=dhcp' }\n" +
         "Example (static IP): { node: 'pve', hostname: 'web-01', ostemplate: 'local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst', net0: 'name=eth0,bridge=vmbr0,ip=10.0.0.50/24,gw=10.0.0.1' }",
       inputSchema: LxcCreateSchema,
-      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+      annotations: { title: "Create Container", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     },
     async ({ node, vmid, hostname, ostemplate, storage, rootfs_size, memory, cores, net0, password, ssh_public_keys, unprivileged, start_after_create }) => {
       const assignedVmid = vmid ?? await client.getNextId();
@@ -129,7 +129,7 @@ export function registerLxcTools(
         "Returns: Task result.\n\n" +
         "Example: { node: 'pve', vmid: 200 }",
       inputSchema: LxcStartSchema,
-      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+      annotations: { title: "Start Container", readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
     async ({ node, vmid }) => {
       const upid = await client.post<string>(
@@ -156,7 +156,7 @@ export function registerLxcTools(
         "Returns: Task result.\n\n" +
         "Example: { node: 'pve', vmid: 200 }",
       inputSchema: LxcStopSchema,
-      annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+      annotations: { title: "Stop Container", readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
     },
     async ({ node, vmid }) => {
       const upid = await client.post<string>(
@@ -184,7 +184,7 @@ export function registerLxcTools(
         "Returns: Task result.\n\n" +
         "Example: { node: 'pve', vmid: 200, confirm_destroy: true }",
       inputSchema: LxcDestroySchema,
-      annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+      annotations: { title: "Destroy Container", readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
     },
     async ({ node, vmid, confirm_destroy }) => {
       if (!confirm_destroy) {
@@ -229,7 +229,7 @@ export function registerLxcTools(
         "Returns: Full container configuration.\n\n" +
         "Example: { node: 'pve', vmid: 200 }",
       inputSchema: LxcConfigGetSchema,
-      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+      annotations: { title: "Get Container Config", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
     async ({ node, vmid }) => {
       const config = await client.get<Record<string, unknown>>(
@@ -253,7 +253,7 @@ export function registerLxcTools(
         "Returns: Confirmation.\n\n" +
         "Example: { node: 'pve', vmid: 200, config: { memory: 2048, cores: 4 } }",
       inputSchema: LxcConfigSetSchema,
-      annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+      annotations: { title: "Set Container Config", readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
     },
     async ({ node, vmid, config }) => {
       await client.put(

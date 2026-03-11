@@ -32,7 +32,7 @@ export function registerMetricsTools(
         "Example: { node: 'pve', vmid: 201 } — last hour\n" +
         "Example: { node: 'pve', vmid: 201, timeframe: 'day' } — last 24 hours",
       inputSchema: VmMetricsSchema,
-      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+      annotations: { title: "VM Performance Metrics", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
     async ({ node, vmid, timeframe }) => {
       const tf = timeframe ?? "hour";
@@ -62,7 +62,7 @@ export function registerMetricsTools(
         "Returns: Time-series node performance data.\n\n" +
         "Example: { node: 'pve', timeframe: 'day' }",
       inputSchema: NodeMetricsSchema,
-      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+      annotations: { title: "Node Performance Metrics", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
     async ({ node, timeframe }) => {
       const tf = timeframe ?? "hour";

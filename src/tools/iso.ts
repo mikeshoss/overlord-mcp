@@ -22,7 +22,7 @@ export function registerIsoTools(
         "Example: { node: 'pve', storage: 'local' }\n" +
         "Example: { node: 'pve', storage: 'local', content: 'vztmpl' }",
       inputSchema: IsoListSchema,
-      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+      annotations: { title: "List ISOs", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
     async ({ node, storage, content }) => {
       const params: Record<string, string> = { content: content ?? "iso" };
@@ -53,7 +53,7 @@ export function registerIsoTools(
         "Returns: Download task result.\n\n" +
         "Example: { node: 'pve', storage: 'local', url: 'https://releases.ubuntu.com/22.04/ubuntu-22.04-live-server-amd64.iso', filename: 'ubuntu-22.04.iso' }",
       inputSchema: IsoDownloadSchema,
-      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+      annotations: { title: "Download ISO", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     },
     async ({ node, storage, url, filename, content, checksum, checksum_algorithm }) => {
       const start = Date.now();

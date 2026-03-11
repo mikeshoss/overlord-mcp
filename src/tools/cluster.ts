@@ -27,8 +27,10 @@ export function registerClusterTools(
         "Example: Call with no arguments to get a cluster overview.",
       inputSchema: ClusterStatusSchema,
       annotations: {
+        title: "Cluster Status",
         readOnlyHint: true,
         destructiveHint: false,
+        idempotentHint: true,
         openWorldHint: false,
       },
     },
@@ -52,8 +54,10 @@ export function registerClusterTools(
         "Example: { node: 'pve' }",
       inputSchema: NodeStatusSchema,
       annotations: {
+        title: "Node Status",
         readOnlyHint: true,
         destructiveHint: false,
+        idempotentHint: true,
         openWorldHint: false,
       },
     },
@@ -86,8 +90,10 @@ export function registerClusterTools(
         "Example: { resource_type: 'node' } — lists all nodes with resource usage",
       inputSchema: ClusterResourcesSchema,
       annotations: {
+        title: "List Cluster Resources",
         readOnlyHint: true,
         destructiveHint: false,
+        idempotentHint: true,
         openWorldHint: false,
       },
     },
@@ -117,8 +123,10 @@ export function registerClusterTools(
         "Example: { node: 'pve', vmid: 100 }",
       inputSchema: VmStatusSchema,
       annotations: {
+        title: "VM Status",
         readOnlyHint: true,
         destructiveHint: false,
+        idempotentHint: true,
         openWorldHint: false,
       },
     },

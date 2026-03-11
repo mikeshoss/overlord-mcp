@@ -30,8 +30,10 @@ export function registerStorageTools(
         "Example: { content: 'backup' } — show storage that can hold backups",
       inputSchema: StorageListSchema,
       annotations: {
+        title: "List Storage Pools",
         readOnlyHint: true,
         destructiveHint: false,
+        idempotentHint: true,
         openWorldHint: false,
       },
     },
@@ -79,8 +81,10 @@ export function registerStorageTools(
         "Example: { node: 'pve', storage: 'local-lvm' }",
       inputSchema: StorageStatusSchema,
       annotations: {
+        title: "Storage Pool Status",
         readOnlyHint: true,
         destructiveHint: false,
+        idempotentHint: true,
         openWorldHint: false,
       },
     },
@@ -122,8 +126,10 @@ export function registerStorageTools(
         "Example: { node: 'pve', storage: 'local-lvm', vmid: 201 }  // disks for VM 201",
       inputSchema: StorageContentSchema,
       annotations: {
+        title: "Browse Storage Content",
         readOnlyHint: true,
         destructiveHint: false,
+        idempotentHint: true,
         openWorldHint: false,
       },
     },

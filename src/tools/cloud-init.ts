@@ -22,7 +22,7 @@ export function registerCloudInitTools(
         "Returns: Cloud-Init config including user, sshkeys, nameserver, searchdomain, ipconfig.\n\n" +
         "Example: { node: 'pve', vmid: 201 }",
       inputSchema: CloudInitGetSchema,
-      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+      annotations: { title: "Get Cloud-Init Config", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
     async ({ node, vmid }) => {
       // Cloud-init config is part of the VM config — extract ci-specific fields
@@ -75,7 +75,7 @@ export function registerCloudInitTools(
         "Returns: Confirmation with list of updated fields.\n\n" +
         "Example: { node: 'pve', vmid: 201, ciuser: 'admin', sshkeys: 'ssh-ed25519 AAAA...', ipconfig0: 'ip=10.0.0.50/24,gw=10.0.0.1', nameserver: '8.8.8.8' }",
       inputSchema: CloudInitSetSchema,
-      annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+      annotations: { title: "Set Cloud-Init Config", readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
     },
     async ({ node, vmid, ...config }) => {
       const data: Record<string, unknown> = {};
@@ -119,7 +119,7 @@ export function registerCloudInitTools(
         "Returns: Confirmation.\n\n" +
         "Example: { node: 'pve', vmid: 201 }",
       inputSchema: CloudInitRegenerateSchema,
-      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+      annotations: { title: "Regenerate Cloud-Init", readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
     async ({ node, vmid }) => {
       await client.put(

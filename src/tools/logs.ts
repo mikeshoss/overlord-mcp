@@ -20,7 +20,7 @@ export function registerLogTools(
         "Example: {}\n" +
         "Example: { max: 50 }",
       inputSchema: ClusterLogSchema,
-      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+      annotations: { title: "Cluster Event Log", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
     async ({ max }) => {
       const params: Record<string, string> = {};
@@ -48,7 +48,7 @@ export function registerLogTools(
         "Example: { node: 'pve' }\n" +
         "Example: { node: 'pve', service: 'pvedaemon', limit: 50 }",
       inputSchema: NodeSyslogSchema,
-      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+      annotations: { title: "Node System Log", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
     async ({ node, limit, since, service }) => {
       const params: Record<string, string> = {};

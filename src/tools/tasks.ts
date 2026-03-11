@@ -26,7 +26,7 @@ export function registerTaskTools(
         "Example: { node: 'pve', running: true } — only active tasks\n" +
         "Example: { node: 'pve', vmid: 201 } — tasks for VM 201",
       inputSchema: TaskListSchema,
-      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+      annotations: { title: "List Tasks", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
     async ({ node, limit, running, vmid, type_filter }) => {
       const params: Record<string, string> = {};
@@ -58,7 +58,7 @@ export function registerTaskTools(
         "Returns: Task status, exit status, and timing.\n\n" +
         "Example: { node: 'pve', upid: 'UPID:pve:...' }",
       inputSchema: TaskStatusSchema,
-      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+      annotations: { title: "Task Status", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
     async ({ node, upid }) => {
       const status = await client.get<Record<string, unknown>>(
@@ -85,7 +85,7 @@ export function registerTaskTools(
         "Returns: Task log lines.\n\n" +
         "Example: { node: 'pve', upid: 'UPID:pve:...' }",
       inputSchema: TaskLogSchema,
-      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+      annotations: { title: "Task Log", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
     async ({ node, upid, limit, start }) => {
       const params: Record<string, string> = {};

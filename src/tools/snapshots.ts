@@ -27,8 +27,10 @@ export function registerSnapshotTools(
         "Example: { node: 'pve', vmid: 100 }",
       inputSchema: SnapshotListSchema,
       annotations: {
+        title: "List Snapshots",
         readOnlyHint: true,
         destructiveHint: false,
+        idempotentHint: true,
         openWorldHint: false,
       },
     },
@@ -60,8 +62,10 @@ export function registerSnapshotTools(
         "Example: { node: 'pve', vmid: 100, name: 'before-update', description: 'Pre-update checkpoint' }",
       inputSchema: SnapshotCreateSchema,
       annotations: {
+        title: "Create Snapshot",
         readOnlyHint: false,
         destructiveHint: false,
+        idempotentHint: false,
         openWorldHint: false,
       },
     },
@@ -103,8 +107,10 @@ export function registerSnapshotTools(
         "Example: { node: 'pve', vmid: 100, snapname: 'before-update' }",
       inputSchema: SnapshotRollbackSchema,
       annotations: {
+        title: "Rollback Snapshot",
         readOnlyHint: false,
         destructiveHint: true,
+        idempotentHint: true,
         openWorldHint: false,
       },
     },
@@ -137,8 +143,10 @@ export function registerSnapshotTools(
         "Example: { node: 'pve', vmid: 100, snapname: 'old-snapshot' }",
       inputSchema: SnapshotDeleteSchema,
       annotations: {
+        title: "Delete Snapshot",
         readOnlyHint: false,
         destructiveHint: true,
+        idempotentHint: true,
         openWorldHint: false,
       },
     },

@@ -44,7 +44,7 @@ export function registerPlacementTools(
         "Example: { min_memory_mb: 8192 } — node with at least 8GB free RAM\n" +
         "Example: { prefer_empty: true } — spread VMs across nodes",
       inputSchema: SmartPlacementSchema,
-      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+      annotations: { title: "Smart Node Placement", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
     async ({ min_memory_mb, min_cores, prefer_empty }) => {
       // Get cluster status and resources in parallel

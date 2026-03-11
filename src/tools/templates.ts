@@ -21,8 +21,10 @@ export function registerTemplateTools(
         "Example: Call with no arguments to see available templates.",
       inputSchema: TemplateListSchema,
       annotations: {
+        title: "List Templates",
         readOnlyHint: true,
         destructiveHint: false,
+        idempotentHint: true,
         openWorldHint: false,
       },
     },
@@ -66,8 +68,10 @@ export function registerTemplateTools(
         "Example: { node: 'pve', template_vmid: 9000, name: 'kali-agent-1', full_clone: true, start_after_clone: true }",
       inputSchema: TemplateCloneSchema,
       annotations: {
+        title: "Clone Template",
         readOnlyHint: false,
         destructiveHint: false,
+        idempotentHint: false,
         openWorldHint: false,
       },
     },

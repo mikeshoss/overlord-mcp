@@ -18,7 +18,7 @@ export function registerPoolTools(
         "Returns: List of pools.\n\n" +
         "Example: {}",
       inputSchema: PoolListSchema,
-      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+      annotations: { title: "List Resource Pools", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
     async () => {
       const pools = await client.get<Record<string, unknown>[]>("pools");
@@ -38,7 +38,7 @@ export function registerPoolTools(
         "Returns: Pool details and member list.\n\n" +
         "Example: { poolid: 'production' }",
       inputSchema: PoolGetSchema,
-      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+      annotations: { title: "Get Resource Pool", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
     async ({ poolid }) => {
       const pool = await client.get<Record<string, unknown>>(
@@ -61,7 +61,7 @@ export function registerPoolTools(
         "Returns: Confirmation.\n\n" +
         "Example: { poolid: 'dev-team', comment: 'Development team resources' }",
       inputSchema: PoolCreateSchema,
-      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+      annotations: { title: "Create Resource Pool", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     },
     async ({ poolid, comment }) => {
       const data: Record<string, unknown> = { poolid };
@@ -92,7 +92,7 @@ export function registerPoolTools(
         "Example: { poolid: 'production', vms: '201,202' } — add VMs 201 and 202\n" +
         "Example: { poolid: 'production', vms: '201', delete_members: true } — remove VM 201 from pool",
       inputSchema: PoolUpdateSchema,
-      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+      annotations: { title: "Update Resource Pool", readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
     async ({ poolid, vms, storage, delete_members }) => {
       const data: Record<string, unknown> = {};

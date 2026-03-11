@@ -27,7 +27,7 @@ export function registerConsoleTools(
         "Example: { node: 'pve', vmid: 201 } — VNC console\n" +
         "Example: { node: 'pve', vmid: 201, type: 'spice' } — SPICE console",
       inputSchema: ConsoleUrlSchema,
-      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+      annotations: { title: "VM Console", readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     },
     async ({ node, vmid, type: consoleType }) => {
       const proxyType = consoleType ?? "vnc";

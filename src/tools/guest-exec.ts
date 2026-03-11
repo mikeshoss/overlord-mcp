@@ -73,8 +73,10 @@ export function registerGuestExecTools(
         "Example: { node: 'pve', vmid: 100, command: 'apt-get install -y docker.io', timeout_seconds: 300 }",
       inputSchema: GuestExecSchema,
       annotations: {
+        title: "Execute Guest Command",
         readOnlyHint: false,
         destructiveHint: true,
+        idempotentHint: false,
         openWorldHint: false,
       },
     },
@@ -129,8 +131,10 @@ export function registerGuestExecTools(
         "Example: { node: 'pve', vmid: 100, file_path: '/etc/hostname' }",
       inputSchema: GuestFileReadSchema,
       annotations: {
+        title: "Read Guest File",
         readOnlyHint: true,
         destructiveHint: false,
+        idempotentHint: true,
         openWorldHint: false,
       },
     },
@@ -181,8 +185,10 @@ export function registerGuestExecTools(
         "Example: { node: 'pve', vmid: 100, timeout_seconds: 120 }",
       inputSchema: GuestPingSchema,
       annotations: {
+        title: "Ping Guest Agent",
         readOnlyHint: true,
         destructiveHint: false,
+        idempotentHint: true,
         openWorldHint: false,
       },
     },
@@ -253,8 +259,10 @@ export function registerGuestExecTools(
         "Example: { node: 'pve', vmid: 100, file_path: '/etc/hostname', content: 'my-new-vm' }",
       inputSchema: GuestFileWriteSchema,
       annotations: {
+        title: "Write Guest File",
         readOnlyHint: false,
         destructiveHint: true,
+        idempotentHint: true,
         openWorldHint: false,
       },
     },

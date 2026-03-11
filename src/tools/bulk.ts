@@ -30,7 +30,7 @@ export function registerBulkTools(
         "Example: { node: 'pve', vmids: [201, 202, 203], action: 'start' }\n" +
         "Example: { node: 'pve', vmids: [201, 202], action: 'snapshot', snapshot_name: 'pre-deploy' }",
       inputSchema: BulkActionSchema,
-      annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+      annotations: { title: "Bulk VM Action", readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
     },
     async ({ node, vmids, action, snapshot_name }) => {
       if (action === "snapshot" && !snapshot_name) {

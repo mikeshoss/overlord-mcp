@@ -25,7 +25,7 @@ export function registerNotifyTools(
         "Example: { url: 'https://hooks.slack.com/services/...', payload: { text: 'VM 201 provisioned' }, format: 'slack' }\n" +
         "Example: { url: 'https://discord.com/api/webhooks/...', payload: { content: 'Backup complete for VM 201' }, format: 'discord' }",
       inputSchema: WebhookSendSchema,
-      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+      annotations: { title: "Send Webhook", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
     },
     async ({ url, payload, format, headers: extraHeaders }) => {
       let body: Record<string, unknown>;
@@ -81,7 +81,7 @@ export function registerNotifyTools(
         "Returns: HTTP response status.\n\n" +
         "Example: { url: 'https://hooks.slack.com/services/...', format: 'slack' }",
       inputSchema: WebhookTestSchema,
-      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+      annotations: { title: "Test Webhook", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
     },
     async ({ url, format }) => {
       const testMessage = "Overlord MCP test notification — webhook is working.";

@@ -24,7 +24,7 @@ export function registerHaTools(
         "Returns: List of HA resources with state, group, and max_restart/max_relocate settings.\n\n" +
         "Example: {}",
       inputSchema: HaResourceListSchema,
-      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+      annotations: { title: "List HA Resources", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
     async () => {
       const resources = await client.get<Record<string, unknown>[]>("cluster/ha/resources");
@@ -56,7 +56,7 @@ export function registerHaTools(
         "Example: { sid: 'vm:201', state: 'started', max_restart: 3, max_relocate: 2 }\n" +
         "Example: { sid: 'vm:201', group: 'production' }",
       inputSchema: HaResourceCreateSchema,
-      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+      annotations: { title: "Add HA Resource", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     },
     async ({ sid, group, state, max_restart, max_relocate, comment }) => {
       const data: Record<string, unknown> = {
@@ -86,7 +86,7 @@ export function registerHaTools(
         "Returns: Confirmation.\n\n" +
         "Example: { sid: 'vm:201' }",
       inputSchema: HaResourceDeleteSchema,
-      annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+      annotations: { title: "Remove HA Resource", readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
     },
     async ({ sid }) => {
       await client.delete(`cluster/ha/resources/${encodeURIComponent(sid)}`);
@@ -106,7 +106,7 @@ export function registerHaTools(
         "Returns: List of HA groups with node assignments.\n\n" +
         "Example: {}",
       inputSchema: HaGroupListSchema,
-      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+      annotations: { title: "List HA Groups", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
     async () => {
       const groups = await client.get<Record<string, unknown>[]>("cluster/ha/groups");
@@ -133,7 +133,7 @@ export function registerHaTools(
         "Returns: Confirmation.\n\n" +
         "Example: { group: 'production', nodes: 'pve1:2,pve2:1', restricted: true }",
       inputSchema: HaGroupCreateSchema,
-      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+      annotations: { title: "Create HA Group", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     },
     async ({ group, nodes, restricted, nofailback, comment }) => {
       const data: Record<string, unknown> = { group, nodes };

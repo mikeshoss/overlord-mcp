@@ -132,7 +132,7 @@ export function registerWorkflowTools(
         "Returns: Clone result, platform detection, and per-recipe provisioning results.\n\n" +
         "Example: { node: 'pve', template_vmid: 9000, name: 'web-server-1', recipes: ['docker', 'node', 'monitoring'] }",
       inputSchema: CloneAndProvisionSchema,
-      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+      annotations: { title: "Clone and Provision VM", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     },
     async ({ node, template_vmid, name, new_vmid, target_node, full_clone, storage, recipes, agent_timeout }) => {
       const start = Date.now();
