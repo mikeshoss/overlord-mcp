@@ -154,3 +154,15 @@ export const GuestPingSchema = z.object({
   vmid: vmid.describe("VM ID to ping guest agent on"),
   timeout_seconds: z.number().int().positive().default(60).optional().describe("Max seconds to wait for guest agent (default: 60)"),
 }).strict();
+
+// ── Provisioning ────────────────────────────────────────────────────────────
+
+export const RecipeListSchema = z.object({}).strict();
+
+export const ProvisionSchema = z.object({
+  node: node,
+  vmid: vmid.describe("VM ID to provision (must be running with guest agent active)"),
+  recipes: z.array(z.string().min(1)).min(1).describe(
+    "Ordered list of recipe names to apply. Available: docker, node, python, go, rust, tailscale, ssh_hardening, qemu_agent, monitoring, reaper_mcp. Use overlord_recipe_list to see details."
+  ),
+}).strict();
