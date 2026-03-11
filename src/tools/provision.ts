@@ -183,8 +183,13 @@ export function registerProvisionTools(
         "  2. overlord_guest_ping\n" +
         "  3. overlord_vm_provision (recipes: ['docker', 'node'])\n\n" +
         "Available recipes (use overlord_recipe_list for details):\n" +
-        "  Linux: docker, node, python, go, rust, tailscale, ssh_hardening, qemu_agent, monitoring, reaper_mcp, openssh_server\n" +
-        "  Windows: docker, node, python, go, rust, tailscale, ssh_hardening, qemu_agent, monitoring, openssh_server, winrm, chocolatey\n\n" +
+        "  AI/Agents: ollama, open_webui, openclaw\n" +
+        "  Security: caldera, greenbone, crowdsec, reaper_mcp\n" +
+        "  Infrastructure: docker, k3s, caddy, nginx, postgresql, redis\n" +
+        "  Networking: tailscale, wireguard, cloudflared\n" +
+        "  Observability: monitoring, grafana, prometheus, loki\n" +
+        "  Dev Runtimes: node, python, go, rust, java, dotnet\n" +
+        "  System: qemu_agent, ssh_hardening, openssh_server, winrm, chocolatey\n\n" +
         "Args:\n" +
         "  - node (string, required): Proxmox node name\n" +
         "  - vmid (number, required): VM ID (must be running with guest agent active)\n" +
