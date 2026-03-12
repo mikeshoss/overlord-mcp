@@ -10,9 +10,15 @@
  * the right variant. If a recipe doesn't support the detected platform,
  * it fails with a clear message.
  *
+ * All bash scripts get the BASH_PREAMBLE prepended (retry_curl, download_verified,
+ * detect_arch, register_cleanup, detect_distro_id). All PowerShell scripts get
+ * the POWERSHELL_PREAMBLE (Invoke-DownloadWithRetry, Assert-Checksum, Get-Arch).
+ *
  * Agents pick from this menu when provisioning a VM:
  *   overlord_vm_provision({ node, vmid, recipes: ["docker", "node"] })
  */
+
+import { BASH_PREAMBLE, POWERSHELL_PREAMBLE } from "./preamble.js";
 
 export type Platform = "debian" | "rhel" | "windows";
 
@@ -27,6 +33,22 @@ export interface Recipe {
   timeoutSeconds: number;
   platforms: Partial<Record<Platform, RecipeVariant>>;
   dependencies?: string[];
+}
+
+/**
+ * Compose a recipe script by prepending the appropriate preamble.
+ * Strips redundant shebang / set -euo / DEBIAN_FRONTEND lines from
+ * the recipe body since the preamble provides them.
+ */
+function composeScript(shell: "bash" | "powershell", script: string): string {
+  if (shell === "bash") {
+    const body = script
+      .replace(/^#!\/bin\/bash\n/, "")
+      .replace(/^set -euo pipefail\n/, "")
+      .replace(/^export DEBIAN_FRONTEND=noninteractive\n/, "");
+    return BASH_PREAMBLE + "\n" + body;
+  }
+  return POWERSHELL_PREAMBLE + "\n" + script;
 }
 
 /**
@@ -68,7 +90,7 @@ const recipes: Record<string, Recipe> = {
     platforms: {
       debian: {
         shell: "bash",
-        script: `#!/bin/bash
+        script: composeScript("bash", `#!/bin/bash
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 
@@ -81,21 +103,34 @@ apt-get update -qq
 apt-get install -y -qq ca-certificates curl gnupg
 
 install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+
+# Detect distro for correct Docker repo URL
+DISTRO_ID="$(detect_distro_id)"
+case "$DISTRO_ID" in
+  ubuntu|pop|linuxmint) DOCKER_DISTRO="ubuntu" ;;
+  debian|kali)          DOCKER_DISTRO="debian" ;;
+  *)                    DOCKER_DISTRO="ubuntu" ;;
+esac
+
+retry_curl 3 -fsSL "https://download.docker.com/linux/\${DOCKER_DISTRO}/gpg" | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 chmod a+r /etc/apt/keyrings/docker.gpg
 
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" > /etc/apt/sources.list.d/docker.list
+# Use VERSION_CODENAME, falling back to UBUNTU_CODENAME for derivatives
+. /etc/os-release
+CODENAME="\${VERSION_CODENAME:-\${UBUNTU_CODENAME:-stable}}"
+
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/\${DOCKER_DISTRO} \${CODENAME} stable" > /etc/apt/sources.list.d/docker.list
 
 apt-get update -qq
 apt-get install -y -qq docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
 systemctl enable --now docker
 echo "Docker installed: $(docker --version)"
-`,
+`),
       },
       rhel: {
         shell: "bash",
-        script: `#!/bin/bash
+        script: composeScript("bash", `#!/bin/bash
 set -euo pipefail
 
 if command -v docker &>/dev/null; then
@@ -109,11 +144,11 @@ dnf -y install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker
 
 systemctl enable --now docker
 echo "Docker installed: $(docker --version)"
-`,
+`),
       },
       windows: {
         shell: "powershell",
-        script: `
+        script: composeScript("powershell", `
 if (Get-Command docker -ErrorAction SilentlyContinue) {
   Write-Output "Docker already installed: $(docker --version)"
   exit 0
@@ -129,7 +164,7 @@ if (Get-Command winget -ErrorAction SilentlyContinue) {
   Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All -NoRestart
   Write-Output "Container features enabled. Install Docker Desktop manually or restart for Server containers."
 }
-`,
+`),
       },
     },
   },
@@ -143,7 +178,7 @@ if (Get-Command winget -ErrorAction SilentlyContinue) {
     platforms: {
       debian: {
         shell: "bash",
-        script: `#!/bin/bash
+        script: composeScript("bash", `#!/bin/bash
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 
@@ -154,15 +189,25 @@ fi
 
 apt-get update -qq
 apt-get install -y -qq ca-certificates curl gnupg
-curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+
+# Set up NodeSource repo directly (no curl | bash)
+install -m 0755 -d /etc/apt/keyrings
+retry_curl 3 -fsSL -o /tmp/nodesource.gpg.key https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key
+register_cleanup /tmp/nodesource.gpg.key
+gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg /tmp/nodesource.gpg.key
+chmod a+r /etc/apt/keyrings/nodesource.gpg
+
+echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" > /etc/apt/sources.list.d/nodesource.list
+
+apt-get update -qq
 apt-get install -y -qq nodejs
 
 echo "Node.js installed: $(node --version), npm: $(npm --version)"
-`,
+`),
       },
       rhel: {
         shell: "bash",
-        script: `#!/bin/bash
+        script: composeScript("bash", `#!/bin/bash
 set -euo pipefail
 
 if command -v node &>/dev/null; then
@@ -170,15 +215,28 @@ if command -v node &>/dev/null; then
   exit 0
 fi
 
-curl -fsSL https://rpm.nodesource.com/setup_22.x | bash -
+# Set up NodeSource repo directly (no curl | bash)
+retry_curl 3 -fsSL -o /tmp/nodesource.gpg.key https://rpm.nodesource.com/gpgkey/nodesource-repo.gpg.key
+register_cleanup /tmp/nodesource.gpg.key
+rpm --import /tmp/nodesource.gpg.key
+
+cat > /etc/yum.repos.d/nodesource.repo << 'REPO'
+[nodesource]
+name=Node.js 22.x
+baseurl=https://rpm.nodesource.com/pub_22.x/nodistro/nodejs/\$basearch
+gpgcheck=1
+gpgkey=https://rpm.nodesource.com/gpgkey/nodesource-repo.gpg.key
+enabled=1
+REPO
+
 dnf -y install nodejs
 
 echo "Node.js installed: $(node --version), npm: $(npm --version)"
-`,
+`),
       },
       windows: {
         shell: "powershell",
-        script: `
+        script: composeScript("powershell", `
 if (Get-Command node -ErrorAction SilentlyContinue) {
   Write-Output "Node.js already installed: $(node --version)"
   exit 0
@@ -193,7 +251,7 @@ if (Get-Command winget -ErrorAction SilentlyContinue) {
   Write-Output "ERROR: winget not available. Install Node.js manually from https://nodejs.org"
   exit 1
 }
-`,
+`),
       },
     },
   },
@@ -207,7 +265,7 @@ if (Get-Command winget -ErrorAction SilentlyContinue) {
     platforms: {
       debian: {
         shell: "bash",
-        script: `#!/bin/bash
+        script: composeScript("bash", `#!/bin/bash
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 
@@ -220,11 +278,11 @@ apt-get update -qq
 apt-get install -y -qq python3 python3-pip python3-venv python3-dev
 
 echo "Python installed: $(python3 --version), pip: $(python3 -m pip --version)"
-`,
+`),
       },
       rhel: {
         shell: "bash",
-        script: `#!/bin/bash
+        script: composeScript("bash", `#!/bin/bash
 set -euo pipefail
 
 if command -v python3 &>/dev/null && python3 -m pip --version &>/dev/null; then
@@ -235,11 +293,11 @@ fi
 dnf -y install python3 python3-pip python3-devel
 
 echo "Python installed: $(python3 --version), pip: $(python3 -m pip --version)"
-`,
+`),
       },
       windows: {
         shell: "powershell",
-        script: `
+        script: composeScript("powershell", `
 if (Get-Command python -ErrorAction SilentlyContinue) {
   Write-Output "Python already installed: $(python --version)"
   exit 0
@@ -253,7 +311,7 @@ if (Get-Command winget -ErrorAction SilentlyContinue) {
   Write-Output "ERROR: winget not available. Install Python manually from https://python.org"
   exit 1
 }
-`,
+`),
       },
     },
   },
@@ -262,12 +320,12 @@ if (Get-Command winget -ErrorAction SilentlyContinue) {
 
   go: {
     name: "go",
-    description: "Install Go (latest stable)",
+    description: "Install Go 1.22.9",
     timeoutSeconds: 180,
     platforms: {
       debian: {
         shell: "bash",
-        script: `#!/bin/bash
+        script: composeScript("bash", `#!/bin/bash
 set -euo pipefail
 
 if command -v go &>/dev/null; then
@@ -275,17 +333,31 @@ if command -v go &>/dev/null; then
   exit 0
 fi
 
-GO_VERSION=$(curl -fsSL 'https://go.dev/VERSION?m=text' | head -1)
-curl -fsSL "https://go.dev/dl/\${GO_VERSION}.linux-amd64.tar.gz" | tar -C /usr/local -xzf -
+GO_VERSION="1.22.9"
+GO_SHA256_amd64="fc0d3d13877efe1a73e80f4e2462dec4cdee18fefd01cfd035c56dc06e999fd0"
+GO_SHA256_arm64="1d546598b498c37c6b6b0d7dbd1b5c0efb0d1d066e8b91b855bcc0d1c8e2f3a8"
+
+eval "GO_SHA256=\\$GO_SHA256_\${ARCH}"
+if [ -z "\${GO_SHA256:-}" ]; then
+  echo "ERROR: Unsupported architecture: \$ARCH" >&2
+  exit 1
+fi
+
+TARBALL="/tmp/go\${GO_VERSION}.linux-\${ARCH}.tar.gz"
+download_verified "https://go.dev/dl/go\${GO_VERSION}.linux-\${ARCH}.tar.gz" "\$TARBALL" "\$GO_SHA256"
+register_cleanup "\$TARBALL"
+
+rm -rf /usr/local/go
+tar -C /usr/local -xzf "\$TARBALL"
 echo 'export PATH=$PATH:/usr/local/go/bin' > /etc/profile.d/go.sh
-export PATH=$PATH:/usr/local/go/bin
+export PATH=\$PATH:/usr/local/go/bin
 
 echo "Go installed: $(go version)"
-`,
+`),
       },
       rhel: {
         shell: "bash",
-        script: `#!/bin/bash
+        script: composeScript("bash", `#!/bin/bash
 set -euo pipefail
 
 if command -v go &>/dev/null; then
@@ -293,17 +365,31 @@ if command -v go &>/dev/null; then
   exit 0
 fi
 
-GO_VERSION=$(curl -fsSL 'https://go.dev/VERSION?m=text' | head -1)
-curl -fsSL "https://go.dev/dl/\${GO_VERSION}.linux-amd64.tar.gz" | tar -C /usr/local -xzf -
+GO_VERSION="1.22.9"
+GO_SHA256_amd64="fc0d3d13877efe1a73e80f4e2462dec4cdee18fefd01cfd035c56dc06e999fd0"
+GO_SHA256_arm64="1d546598b498c37c6b6b0d7dbd1b5c0efb0d1d066e8b91b855bcc0d1c8e2f3a8"
+
+eval "GO_SHA256=\\$GO_SHA256_\${ARCH}"
+if [ -z "\${GO_SHA256:-}" ]; then
+  echo "ERROR: Unsupported architecture: \$ARCH" >&2
+  exit 1
+fi
+
+TARBALL="/tmp/go\${GO_VERSION}.linux-\${ARCH}.tar.gz"
+download_verified "https://go.dev/dl/go\${GO_VERSION}.linux-\${ARCH}.tar.gz" "\$TARBALL" "\$GO_SHA256"
+register_cleanup "\$TARBALL"
+
+rm -rf /usr/local/go
+tar -C /usr/local -xzf "\$TARBALL"
 echo 'export PATH=$PATH:/usr/local/go/bin' > /etc/profile.d/go.sh
-export PATH=$PATH:/usr/local/go/bin
+export PATH=\$PATH:/usr/local/go/bin
 
 echo "Go installed: $(go version)"
-`,
+`),
       },
       windows: {
         shell: "powershell",
-        script: `
+        script: composeScript("powershell", `
 if (Get-Command go -ErrorAction SilentlyContinue) {
   Write-Output "Go already installed: $(go version)"
   exit 0
@@ -317,7 +403,7 @@ if (Get-Command winget -ErrorAction SilentlyContinue) {
   Write-Output "ERROR: winget not available."
   exit 1
 }
-`,
+`),
       },
     },
   },
@@ -331,7 +417,7 @@ if (Get-Command winget -ErrorAction SilentlyContinue) {
     platforms: {
       debian: {
         shell: "bash",
-        script: `#!/bin/bash
+        script: composeScript("bash", `#!/bin/bash
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 
@@ -345,7 +431,12 @@ apt-get install -y -qq curl build-essential
 
 export RUSTUP_HOME=/opt/rustup
 export CARGO_HOME=/opt/cargo
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
+
+# Download-then-execute (no curl | sh)
+retry_curl 3 --proto '=https' --tlsv1.2 -sSf -o /tmp/rustup-init.sh https://sh.rustup.rs
+register_cleanup /tmp/rustup-init.sh
+chmod +x /tmp/rustup-init.sh
+/tmp/rustup-init.sh -y --no-modify-path
 
 cat > /etc/profile.d/rust.sh << 'PROFILE'
 export RUSTUP_HOME=/opt/rustup
@@ -353,13 +444,13 @@ export CARGO_HOME=/opt/cargo
 export PATH=$CARGO_HOME/bin:$PATH
 PROFILE
 
-export PATH=$CARGO_HOME/bin:$PATH
+export PATH=\$CARGO_HOME/bin:\$PATH
 echo "Rust installed: $(rustc --version)"
-`,
+`),
       },
       rhel: {
         shell: "bash",
-        script: `#!/bin/bash
+        script: composeScript("bash", `#!/bin/bash
 set -euo pipefail
 
 if command -v rustc &>/dev/null; then
@@ -371,7 +462,12 @@ dnf -y install curl gcc make
 
 export RUSTUP_HOME=/opt/rustup
 export CARGO_HOME=/opt/cargo
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
+
+# Download-then-execute (no curl | sh)
+retry_curl 3 --proto '=https' --tlsv1.2 -sSf -o /tmp/rustup-init.sh https://sh.rustup.rs
+register_cleanup /tmp/rustup-init.sh
+chmod +x /tmp/rustup-init.sh
+/tmp/rustup-init.sh -y --no-modify-path
 
 cat > /etc/profile.d/rust.sh << 'PROFILE'
 export RUSTUP_HOME=/opt/rustup
@@ -379,13 +475,13 @@ export CARGO_HOME=/opt/cargo
 export PATH=$CARGO_HOME/bin:$PATH
 PROFILE
 
-export PATH=$CARGO_HOME/bin:$PATH
+export PATH=\$CARGO_HOME/bin:\$PATH
 echo "Rust installed: $(rustc --version)"
-`,
+`),
       },
       windows: {
         shell: "powershell",
-        script: `
+        script: composeScript("powershell", `
 if (Get-Command rustc -ErrorAction SilentlyContinue) {
   Write-Output "Rust already installed: $(rustc --version)"
   exit 0
@@ -399,7 +495,7 @@ if (Get-Command winget -ErrorAction SilentlyContinue) {
   Write-Output "ERROR: winget not available."
   exit 1
 }
-`,
+`),
       },
     },
   },
@@ -413,7 +509,7 @@ if (Get-Command winget -ErrorAction SilentlyContinue) {
     platforms: {
       debian: {
         shell: "bash",
-        script: `#!/bin/bash
+        script: composeScript("bash", `#!/bin/bash
 set -euo pipefail
 
 if command -v tailscale &>/dev/null; then
@@ -421,15 +517,19 @@ if command -v tailscale &>/dev/null; then
   exit 0
 fi
 
-curl -fsSL https://tailscale.com/install.sh | sh
+# Download-then-execute (no curl | sh)
+retry_curl 3 -fsSL -o /tmp/tailscale-install.sh https://tailscale.com/install.sh
+register_cleanup /tmp/tailscale-install.sh
+bash /tmp/tailscale-install.sh
+
 systemctl enable --now tailscaled
 echo "Tailscale installed: $(tailscale version)"
 echo "NOTE: Run 'tailscale up' to authenticate this node."
-`,
+`),
       },
       rhel: {
         shell: "bash",
-        script: `#!/bin/bash
+        script: composeScript("bash", `#!/bin/bash
 set -euo pipefail
 
 if command -v tailscale &>/dev/null; then
@@ -437,15 +537,19 @@ if command -v tailscale &>/dev/null; then
   exit 0
 fi
 
-curl -fsSL https://tailscale.com/install.sh | sh
+# Download-then-execute (no curl | sh)
+retry_curl 3 -fsSL -o /tmp/tailscale-install.sh https://tailscale.com/install.sh
+register_cleanup /tmp/tailscale-install.sh
+bash /tmp/tailscale-install.sh
+
 systemctl enable --now tailscaled
 echo "Tailscale installed: $(tailscale version)"
 echo "NOTE: Run 'tailscale up' to authenticate this node."
-`,
+`),
       },
       windows: {
         shell: "powershell",
-        script: `
+        script: composeScript("powershell", `
 if (Get-Command tailscale -ErrorAction SilentlyContinue) {
   Write-Output "Tailscale already installed"
   exit 0
@@ -458,7 +562,7 @@ if (Get-Command winget -ErrorAction SilentlyContinue) {
   Write-Output "ERROR: winget not available."
   exit 1
 }
-`,
+`),
       },
     },
   },
@@ -472,35 +576,35 @@ if (Get-Command winget -ErrorAction SilentlyContinue) {
     platforms: {
       debian: {
         shell: "bash",
-        script: `#!/bin/bash
+        script: composeScript("bash", `#!/bin/bash
 set -euo pipefail
 
 SSHD_CONFIG="/etc/ssh/sshd_config"
-sed -i 's/^#*PermitRootLogin.*/PermitRootLogin no/' "$SSHD_CONFIG"
-sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication no/' "$SSHD_CONFIG"
-sed -i 's/^#*PermitEmptyPasswords.*/PermitEmptyPasswords no/' "$SSHD_CONFIG"
+sed -i 's/^#*PermitRootLogin.*/PermitRootLogin no/' "\$SSHD_CONFIG"
+sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication no/' "\$SSHD_CONFIG"
+sed -i 's/^#*PermitEmptyPasswords.*/PermitEmptyPasswords no/' "\$SSHD_CONFIG"
 
 systemctl restart sshd
 echo "SSH hardened: root login disabled, password auth disabled"
-`,
+`),
       },
       rhel: {
         shell: "bash",
-        script: `#!/bin/bash
+        script: composeScript("bash", `#!/bin/bash
 set -euo pipefail
 
 SSHD_CONFIG="/etc/ssh/sshd_config"
-sed -i 's/^#*PermitRootLogin.*/PermitRootLogin no/' "$SSHD_CONFIG"
-sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication no/' "$SSHD_CONFIG"
-sed -i 's/^#*PermitEmptyPasswords.*/PermitEmptyPasswords no/' "$SSHD_CONFIG"
+sed -i 's/^#*PermitRootLogin.*/PermitRootLogin no/' "\$SSHD_CONFIG"
+sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication no/' "\$SSHD_CONFIG"
+sed -i 's/^#*PermitEmptyPasswords.*/PermitEmptyPasswords no/' "\$SSHD_CONFIG"
 
 systemctl restart sshd
 echo "SSH hardened: root login disabled, password auth disabled"
-`,
+`),
       },
       windows: {
         shell: "powershell",
-        script: `
+        script: composeScript("powershell", `
 # Harden OpenSSH Server on Windows
 $sshdConfig = "$env:ProgramData\\ssh\\sshd_config"
 if (Test-Path $sshdConfig) {
@@ -513,7 +617,7 @@ if (Test-Path $sshdConfig) {
 } else {
   Write-Output "OpenSSH Server not installed. Skipping."
 }
-`,
+`),
       },
     },
   },
@@ -527,7 +631,7 @@ if (Test-Path $sshdConfig) {
     platforms: {
       debian: {
         shell: "bash",
-        script: `#!/bin/bash
+        script: composeScript("bash", `#!/bin/bash
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 
@@ -541,11 +645,11 @@ apt-get install -y -qq qemu-guest-agent
 systemctl enable --now qemu-guest-agent
 
 echo "qemu-guest-agent installed and running"
-`,
+`),
       },
       rhel: {
         shell: "bash",
-        script: `#!/bin/bash
+        script: composeScript("bash", `#!/bin/bash
 set -euo pipefail
 
 if systemctl is-active --quiet qemu-guest-agent 2>/dev/null; then
@@ -557,11 +661,11 @@ dnf -y install qemu-guest-agent
 systemctl enable --now qemu-guest-agent
 
 echo "qemu-guest-agent installed and running"
-`,
+`),
       },
       windows: {
         shell: "powershell",
-        script: `
+        script: composeScript("powershell", `
 # On Windows, the QEMU Guest Agent is typically installed via the VirtIO drivers ISO.
 # Check if the service exists
 $svc = Get-Service -Name "QEMU-GA" -ErrorAction SilentlyContinue
@@ -578,7 +682,7 @@ if ($svc) {
   Write-Output "QEMU Guest Agent not found. Install VirtIO guest tools from the VirtIO ISO (virtio-win-gt-x64.msi)."
   exit 1
 }
-`,
+`),
       },
     },
   },
@@ -592,7 +696,7 @@ if ($svc) {
     platforms: {
       debian: {
         shell: "bash",
-        script: `#!/bin/bash
+        script: composeScript("bash", `#!/bin/bash
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 
@@ -604,8 +708,23 @@ fi
 useradd --no-create-home --shell /bin/false node_exporter 2>/dev/null || true
 
 VERSION="1.7.0"
-curl -fsSL "https://github.com/prometheus/node_exporter/releases/download/v\${VERSION}/node_exporter-\${VERSION}.linux-amd64.tar.gz" | tar -xzf - -C /tmp
-cp "/tmp/node_exporter-\${VERSION}.linux-amd64/node_exporter" /usr/local/bin/
+NE_SHA256_amd64="a550cd5c05f760b7934a2d0afad66d2e92e681482f5f57a917465b1fba3b02a6"
+NE_SHA256_arm64="e386c7b53bc130eaf5e74da28efc6b444857b77df8070537be52678aefd34d96"
+
+eval "NE_SHA256=\\$NE_SHA256_\${ARCH}"
+if [ -z "\${NE_SHA256:-}" ]; then
+  echo "ERROR: Unsupported architecture: \$ARCH" >&2
+  exit 1
+fi
+
+TARBALL="/tmp/node_exporter-\${VERSION}.linux-\${ARCH}.tar.gz"
+download_verified \
+  "https://github.com/prometheus/node_exporter/releases/download/v\${VERSION}/node_exporter-\${VERSION}.linux-\${ARCH}.tar.gz" \
+  "\$TARBALL" "\$NE_SHA256"
+register_cleanup "\$TARBALL" "/tmp/node_exporter-\${VERSION}.linux-\${ARCH}"
+
+tar -xzf "\$TARBALL" -C /tmp
+cp "/tmp/node_exporter-\${VERSION}.linux-\${ARCH}/node_exporter" /usr/local/bin/
 chown node_exporter:node_exporter /usr/local/bin/node_exporter
 
 cat > /etc/systemd/system/node_exporter.service << 'SERVICE'
@@ -626,11 +745,11 @@ systemctl daemon-reload
 systemctl enable --now node_exporter
 
 echo "node_exporter installed and running on :9100"
-`,
+`),
       },
       rhel: {
         shell: "bash",
-        script: `#!/bin/bash
+        script: composeScript("bash", `#!/bin/bash
 set -euo pipefail
 
 if systemctl is-active --quiet node_exporter 2>/dev/null; then
@@ -641,8 +760,23 @@ fi
 useradd --no-create-home --shell /bin/false node_exporter 2>/dev/null || true
 
 VERSION="1.7.0"
-curl -fsSL "https://github.com/prometheus/node_exporter/releases/download/v\${VERSION}/node_exporter-\${VERSION}.linux-amd64.tar.gz" | tar -xzf - -C /tmp
-cp "/tmp/node_exporter-\${VERSION}.linux-amd64/node_exporter" /usr/local/bin/
+NE_SHA256_amd64="a550cd5c05f760b7934a2d0afad66d2e92e681482f5f57a917465b1fba3b02a6"
+NE_SHA256_arm64="e386c7b53bc130eaf5e74da28efc6b444857b77df8070537be52678aefd34d96"
+
+eval "NE_SHA256=\\$NE_SHA256_\${ARCH}"
+if [ -z "\${NE_SHA256:-}" ]; then
+  echo "ERROR: Unsupported architecture: \$ARCH" >&2
+  exit 1
+fi
+
+TARBALL="/tmp/node_exporter-\${VERSION}.linux-\${ARCH}.tar.gz"
+download_verified \
+  "https://github.com/prometheus/node_exporter/releases/download/v\${VERSION}/node_exporter-\${VERSION}.linux-\${ARCH}.tar.gz" \
+  "\$TARBALL" "\$NE_SHA256"
+register_cleanup "\$TARBALL" "/tmp/node_exporter-\${VERSION}.linux-\${ARCH}"
+
+tar -xzf "\$TARBALL" -C /tmp
+cp "/tmp/node_exporter-\${VERSION}.linux-\${ARCH}/node_exporter" /usr/local/bin/
 chown node_exporter:node_exporter /usr/local/bin/node_exporter
 
 cat > /etc/systemd/system/node_exporter.service << 'SERVICE'
@@ -663,11 +797,11 @@ systemctl daemon-reload
 systemctl enable --now node_exporter
 
 echo "node_exporter installed and running on :9100"
-`,
+`),
       },
       windows: {
         shell: "powershell",
-        script: `
+        script: composeScript("powershell", `
 # Windows exporter (Prometheus metrics for Windows)
 $svc = Get-Service -Name "windows_exporter" -ErrorAction SilentlyContinue
 if ($svc -and $svc.Status -eq "Running") {
@@ -676,15 +810,17 @@ if ($svc -and $svc.Status -eq "Running") {
 }
 
 $version = "0.25.1"
-$url = "https://github.com/prometheus-community/windows_exporter/releases/download/v$version/windows_exporter-$version-amd64.msi"
+$sha256 = "bbe6a2e13850e7fd15a3b9a58ed4a078a93b402caec62df014453f258878134c"
 $msi = "$env:TEMP\\windows_exporter.msi"
 
-Invoke-WebRequest -Uri $url -OutFile $msi
+Invoke-DownloadWithRetry -Uri "https://github.com/prometheus-community/windows_exporter/releases/download/v$version/windows_exporter-$version-$ARCH.msi" -OutFile $msi
+Assert-Checksum -Path $msi -ExpectedSHA256 $sha256
+
 Start-Process msiexec.exe -Wait -ArgumentList "/i $msi /quiet"
 Remove-Item $msi -Force
 
 Write-Output "windows_exporter installed and running on :9182"
-`,
+`),
       },
     },
   },
@@ -699,7 +835,7 @@ Write-Output "windows_exporter installed and running on :9182"
     platforms: {
       debian: {
         shell: "bash",
-        script: `#!/bin/bash
+        script: composeScript("bash", `#!/bin/bash
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 
@@ -708,14 +844,21 @@ if ! command -v docker &>/dev/null; then
   exit 1
 fi
 
+# Check if image already exists
+if docker images --format '{{.Repository}}' | grep -q 'reaper-mcp'; then
+  echo "reaper-mcp image already present"
+  exit 0
+fi
+
 docker pull ghcr.io/mikeshoss/reaper-mcp:latest 2>/dev/null || {
   echo "Pre-built image not found. Building from source..."
   apt-get update -qq
   apt-get install -y -qq git
 
-  cd /opt
-  git clone https://github.com/mikeshoss/reaper-mcp.git
-  cd reaper-mcp
+  if [ ! -d /opt/reaper-mcp ]; then
+    git clone --depth 1 https://github.com/mikeshoss/reaper-mcp.git /opt/reaper-mcp
+  fi
+  cd /opt/reaper-mcp
   docker build -t reaper-mcp .
   echo "reaper-mcp built from source"
   exit 0
@@ -723,11 +866,11 @@ docker pull ghcr.io/mikeshoss/reaper-mcp:latest 2>/dev/null || {
 
 echo "reaper-mcp image pulled and ready"
 echo "Run with: docker run -i --rm reaper-mcp"
-`,
+`),
       },
       rhel: {
         shell: "bash",
-        script: `#!/bin/bash
+        script: composeScript("bash", `#!/bin/bash
 set -euo pipefail
 
 if ! command -v docker &>/dev/null; then
@@ -735,13 +878,20 @@ if ! command -v docker &>/dev/null; then
   exit 1
 fi
 
+# Check if image already exists
+if docker images --format '{{.Repository}}' | grep -q 'reaper-mcp'; then
+  echo "reaper-mcp image already present"
+  exit 0
+fi
+
 docker pull ghcr.io/mikeshoss/reaper-mcp:latest 2>/dev/null || {
   echo "Pre-built image not found. Building from source..."
   dnf -y install git
 
-  cd /opt
-  git clone https://github.com/mikeshoss/reaper-mcp.git
-  cd reaper-mcp
+  if [ ! -d /opt/reaper-mcp ]; then
+    git clone --depth 1 https://github.com/mikeshoss/reaper-mcp.git /opt/reaper-mcp
+  fi
+  cd /opt/reaper-mcp
   docker build -t reaper-mcp .
   echo "reaper-mcp built from source"
   exit 0
@@ -749,7 +899,7 @@ docker pull ghcr.io/mikeshoss/reaper-mcp:latest 2>/dev/null || {
 
 echo "reaper-mcp image pulled and ready"
 echo "Run with: docker run -i --rm reaper-mcp"
-`,
+`),
       },
     },
   },
@@ -763,7 +913,7 @@ echo "Run with: docker run -i --rm reaper-mcp"
     platforms: {
       debian: {
         shell: "bash",
-        script: `#!/bin/bash
+        script: composeScript("bash", `#!/bin/bash
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 
@@ -777,11 +927,11 @@ apt-get install -y -qq openssh-server
 systemctl enable --now ssh
 
 echo "OpenSSH server installed and running"
-`,
+`),
       },
       rhel: {
         shell: "bash",
-        script: `#!/bin/bash
+        script: composeScript("bash", `#!/bin/bash
 set -euo pipefail
 
 if systemctl is-active --quiet sshd 2>/dev/null; then
@@ -793,11 +943,11 @@ dnf -y install openssh-server
 systemctl enable --now sshd
 
 echo "OpenSSH server installed and running"
-`,
+`),
       },
       windows: {
         shell: "powershell",
-        script: `
+        script: composeScript("powershell", `
 $svc = Get-Service -Name sshd -ErrorAction SilentlyContinue
 if ($svc -and $svc.Status -eq "Running") {
   Write-Output "OpenSSH Server already running"
@@ -814,7 +964,7 @@ Set-Service -Name sshd -StartupType Automatic
 New-NetFirewallRule -Name "OpenSSH-Server" -DisplayName "OpenSSH Server (sshd)" -Enabled True -Direction Inbound -Protocol TCP -Action Allow -LocalPort 22 -ErrorAction SilentlyContinue
 
 Write-Output "OpenSSH Server installed and running on port 22"
-`,
+`),
       },
     },
   },
@@ -828,7 +978,7 @@ Write-Output "OpenSSH Server installed and running on port 22"
     platforms: {
       windows: {
         shell: "powershell",
-        script: `
+        script: composeScript("powershell", `
 $svc = Get-Service -Name WinRM -ErrorAction SilentlyContinue
 if ($svc -and $svc.Status -eq "Running") {
   Write-Output "WinRM already running"
@@ -839,7 +989,7 @@ Enable-PSRemoting -Force -SkipNetworkProfileCheck
 Set-Item WSMan:\\localhost\\Client\\TrustedHosts -Value "*" -Force
 
 Write-Output "WinRM enabled and configured"
-`,
+`),
       },
     },
   },
@@ -853,7 +1003,7 @@ Write-Output "WinRM enabled and configured"
     platforms: {
       windows: {
         shell: "powershell",
-        script: `
+        script: composeScript("powershell", `
 if (Get-Command choco -ErrorAction SilentlyContinue) {
   Write-Output "Chocolatey already installed: $(choco --version)"
   exit 0
@@ -861,10 +1011,15 @@ if (Get-Command choco -ErrorAction SilentlyContinue) {
 
 Set-ExecutionPolicy Bypass -Scope Process -Force
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+
+# Download-then-execute (no iex DownloadString)
+$installer = "$env:TEMP\\choco-install.ps1"
+Invoke-DownloadWithRetry -Uri 'https://community.chocolatey.org/install.ps1' -OutFile $installer
+& $installer
+Remove-Item $installer -Force -ErrorAction SilentlyContinue
 
 Write-Output "Chocolatey installed: $(choco --version)"
-`,
+`),
       },
     },
   },
