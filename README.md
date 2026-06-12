@@ -2,7 +2,7 @@
 
 > *AI-controlled infrastructure. Provision, command, destroy.*
 
-An MCP (Model Context Protocol) server that wraps the **Proxmox VE API**, giving AI agents full control over virtual machine and container infrastructure. 87 tools covering the complete Proxmox surface — VMs, containers, networking, firewall, storage, backup, HA, monitoring, and automated provisioning with 13 built-in recipes.
+An MCP (Model Context Protocol) server that wraps the **Proxmox VE API**, giving AI agents full control over virtual machine and container infrastructure. 83 tools covering the complete Proxmox surface — VMs, containers, networking, firewall, storage, backup, HA, monitoring, and automated provisioning with 13 built-in recipes.
 
 Overlord is the orchestration layer that lets an AI agent **provision its own infrastructure on demand**. It pairs with specialized MCP servers like [reaper-mcp](https://github.com/mikeshoss/reaper-mcp) (Kali Linux security tools) — Overlord provisions the environments, and tools like Reaper operate within them.
 
@@ -22,7 +22,7 @@ Overlord is the orchestration layer that lets an AI agent **provision its own in
                                                                        └─────┘     └─────┘     └─────┘
 ```
 
-## Tools (87 total)
+## Tools (83 total)
 
 ### Cluster & Node Info (4 tools)
 
@@ -368,7 +368,7 @@ overlord-mcp/
 ├── Dockerfile
 ├── docker-compose.yml
 ├── src/
-│   ├── index.ts              # Entry point — registers all 87 tools, handles transport
+│   ├── index.ts              # Entry point — registers all 83 tools, handles transport
 │   ├── constants.ts          # API defaults, timeouts, env var names
 │   ├── types.ts              # TypeScript interfaces for Proxmox API responses
 │   ├── schemas/
