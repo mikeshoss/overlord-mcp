@@ -1,0 +1,13 @@
+# Staged for sakaar. Fill ./.env then:  docker compose -f docker-compose.run.yml up -d
+services:
+  overlord-mcp:
+    build: .
+    container_name: overlord-mcp
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "127.0.0.1:3002:3002"          # loopback only; the gateway proxies it
+    environment:
+      - TRANSPORT=http
+      - PORT=3002
+      - NODE_TLS_REJECT_UNAUTHORIZED=0  # Proxmox uses a self-signed cert
